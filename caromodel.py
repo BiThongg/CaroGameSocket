@@ -1,16 +1,16 @@
-
 from re import X
 import time
 
 O = "O"
 X = "X"
+EMPTY = None
 
 
 class CaroGame:
     X = "X"
     O = "O"
     EMPTY = None
-    sizeMatrix = 6
+    sizeMatrix = 5
     board = []
 
     def __init__(self):
@@ -132,56 +132,183 @@ class CaroGame:
                             return board[i][j]
 
                     return None
+
     def utility(self, board):
-                if self.winner(board) == self.X:
-                    return 1
-                elif self.winner(board) == self.O:
-                    return -1
-                else:
-                    return 0
+        if self.winner(board) == self.X:
+            return 1
+        elif self.winner(board) == self.O:
+            return -1
+        else:
+            return 0
 
     def minimax(self, board):
         return 1
 
+    # def max_alpha_beta(self, alpha, beta):
+    #     max_v = -2
+    #     px = None
+    #     py = None
+    #
+    #     result = self.terminal(self.board)
+    #     if result is True:
+    #         winner_person = self.winner(self.board)
+    #         if winner_person == self.X:
+    #             return (-1, 0, 0)
+    #         elif winner_person == self.O:
+    #             return (1, 0, 0)
+    #         else:
+    #             return 0
+    #
+    #     for action in self.actions(self.board):
+    #         i, j = action
+    #         self.board[i][j] = self.X
+    #         (m, min_i, min_j) = self.min_alpha_beta(alpha, beta)
+    #         if m > max_v:
+    #             max_v = m
+    #             px = i
+    #             py = j
+    #         self.board[i][j] = self.EMPTY
+    #
+    #         if max_v >= beta:
+    #             return (max_v, px, py)
+    #         if max_v > alpha:
+    #             alpha = max_v
+    #     return (max_v, px, py)
+    #
+    # def min_alpha_beta(self, alpha, beta):
+    #     min_v = 2
+    #     px = None
+    #     py = None
+    #
+    #     result = self.terminal(self.board)
+    #     if result is True:
+    #         winner_person = self.winner(self.board)
+    #         if winner_person == self.X:
+    #             return (-1, 0, 0)
+    #         elif winner_person == self.O:
+    #             return (1, 0, 0)
+    #         else:
+    #             return 0
+    #
+    #     for action in self.actions(self.board):
+    #         i, j = action
+    #         print(i, j)
+    #         (m, min_i, min_j) = self.max_alpha_beta(alpha, beta)
+    #         if m < min_v:
+    #             min_v = m
+    #             px = i
+    #             py = j
+    #         self.board[i][j] = self.EMPTY
+    #
+    #         if min_v <= alpha:
+    #             return (min_v, px, py)
+    #         if min_v < beta:
+    #             beta = min_v
+    #
+    #     return (min_v, px, py)
+
     def max_alpha_beta(self, alpha, beta):
-        max_v = -2
+        self.draw_board()
+        maxv = -2
         px = None
         py = None
-        
-        result = self.winner(self.board)
-        if result == self.X:
-            return (1, 0, 0)
-        elif result == self.O:
-            return (-1, 0, 0)
-        elif result == None:
-            return 0
-        
+
+        result = self.terminal(self.board)
+        if result is True:
+            winner_person = self.winner(self.board)
+            if winner_person == self.X:
+                return (-1, 0, 0)
+            elif winner_person == self.O:
+                return (1, 0, 0)
+            else:
+                return (0, 0, 0)
+
         for i in range(0, self.sizeMatrix):
             for j in range(0, self.sizeMatrix):
-                if self.board[i][j] == self.EMPTY:
-                    self.board[i][j] = self.X
-                    (m, min_i, in_j) = self.min_alpha_beta(alpha, beta)
-                    if m > max_v:
-                        max_v = m
+                if self.board[i][j] == EMPTY:
+                    self.board[i][j] = O
+                    (m, min_i, min_j) = self.min_alpha_beta(alpha, beta)
+                    if m == 1:
+                        self.board[i][j] = EMPTY
+                        return (1, i, j)
+
+                    if m > maxv:
+                        maxv = m
                         px = i
                         py = j
-                    self.board[i][j] = self.EMPTY
+                    self.board[i][j] = EMPTY
 
-                    if max_v >= beta:
-                        return (max_v, px, py)
-                    if max_v > alpha:
-                        alpha = max_v
+                    if maxv >= beta:
+                        return (maxv, px, py)
 
+                    if maxv > alpha:
+                        alpha = maxv
 
-                
+        return (maxv, px, py)
+
+    def min_alpha_beta(self, alpha, beta):
+        minv = 2
+
+        qx = None
+        qy = None
+
+        result = self.terminal(self.board)
+        if result is True:
+            winner_person = self.winner(self.board)
+            if winner_person == self.X:
+                return (-1, 0, 0)
+            elif winner_person == self.O:
+                return (1, 0, 0)
+            else:
+                return (0, 0, 0)
+
+        for i in range(0, self.sizeMatrix):
+            for j in range(0, self.sizeMatrix):
+                if self.board[i][j] == EMPTY:
+                    self.board[i][j] = X
+                    (m, max_i, max_j) = self.max_alpha_beta(alpha,beta )
+                    if(m == -1):
+                        self.board[i][j] = EMPTY
+                        return (-1, i, j)
+
+                    if m < minv:
+                        minv = m
+                        qx = i
+                        qy = j
+                    self.board[i][j] = EMPTY
+
+                    if minv <= alpha:
+                        return (minv, qx, qy)
+
+                    if minv < beta:
+                        beta = minv
+
+        return (minv, qx, qy)
+
 
 sessionPlay = CaroGame()
-sessionPlay.board = [
-    [X, O, X, O, X, O],
-    [O, X, O, X, O, X],
-    [X, O, X, O, X, O],
-    [O, X, O, X, O, X],
-    [X, O, X, O, X, O],
-    [O, X, O, X, O, X],
-]
-print(sessionPlay.winner(sessionPlay.board))
+# sessionPlay.board = [
+#     [X, O, X, O, X, O, X, O, X, O, X, O, X, O, X],
+#     [O, X, O, X, O, X, O, X, O, X, O, X, O, X, O],
+#     [X, O, EMPTY, O, X, O, X, O, X, O, X, O, X, O, X],
+#     [O, X, O, X, O, X, O, X, O, X, O, X, O, X, O],
+#     [X, O, X, O, X, O, X, O, X, O, X, O, X, O, X],
+#     [O, X, O, X, O, X, O, X, O, X, O, X, O, X, O],
+#     [X, O, X, O, X, O, EMPTY, O, X, O, X, O, X, O, X],
+#     [O, X, O, X, O, X, O, X, O, X, O, X, O, X, O],
+#     [X, O, X, O, X, O, X, O, X, O, X, O, X, O, X],
+#     [O, X, O, X, O, X, O, X, O, X, O, X, O, X, O],
+#     [X, O, X, O, X, O, X, O, X, O, EMPTY, O, X, O, X],
+#     [O, X, O, X, O, X, O, X, O, X, O, X, O, X, O],
+#     [X, O, X, O, X, O, X, O, X, O, X, O, X, O, X],
+#     [O, X, O, X, O, X, O, X, O, X, O, X, O, X, O],
+#     [X, O, X, O, X, O, X, O, X, O, X, O, X, O, X],
+# ]
+# sessionPlay.draw_board()
+# sessionPlay.board[0][0] = X
+# print(sessionPlay.actions(sessionPlay.board))
+
+
+# print(sessionPlay.player(sessionPlay.board))
+print(sessionPlay.max_alpha_beta(-2, 2))
+# print(sessionPlay.actions(sessionPlay.board))
