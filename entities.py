@@ -2,7 +2,7 @@ import numpy as np
 
 class User():
     def __init__(self, id, name):
-        self.id = id
+        self.id = str(id)
         self.name = name
         self.current_room = None
     
@@ -26,23 +26,26 @@ class User():
 
 class Room():
     def __init__(self, id, name):
-        self.id = id
+        self.id = str(id)
         self.name = name
         self.lead = None
         self.guest = None
         self.ready_player = 0
-        self.game_play = []
+        self.game = []
+        self.watchers = []
+        self.status = None
 
-    def isAvailable(self):
-        if len(self.players) < 2 and self.ready_player == 2:
-            return True
-        else:
-            return False
+    def isReady(self):
+        return self.ready_player == 2
+
+    def isFull(self):
+        return self.lead != None and self.guest != None
 
 class Game():
     def __init__(self, id):
         self.id = id
         self.winner = None
+        self.room = room
         self.chessboard = np.zeros((15, 15))
     
     def add_player(self, objPlayer):

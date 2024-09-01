@@ -26,24 +26,21 @@ rooms = {}
 users = {}
 games = {}
 records = {}
-# request.ids = uuid
-uuid_mapping = {}
 
-# user event
+# user event ------------------------------------------------------------------------
 
 @socketio.event
 def connect():
-    user = User(id = request.sid, name = name_generation(5))
     global users
+    user = User(id = request.sid, name = name_generation(5))
     users[user.id] = user
     print(">> client {} connected to server".format(user.id))
 
 @socketio.event
 def disconnect():
     global users
-    user = users.get(request.sid)
     del users[request.sid]
-    print(">> client {} disconnected to server".format(user.id))
+    print(">> client {} disconnected to server".format(request.sid.id))
 
 @socketio.on('player_information')
 def handle_player_information(payload):
@@ -56,14 +53,13 @@ def handle_player_information(payload):
         "player": serialization(user)
     }, to = user.id)
 
-# room event
+# room event ------------------------------------------------------------------------
 
 @socketio.on('room_list')
 def handle_fetch_rooms(payload):
     res = []
     for room in rooms.values():
         res.append(serialization(room))
-
     socketio.emit('room_list', {
         "code": 200,
         "message": 'Room list',
@@ -87,14 +83,14 @@ def handle_ready(payload):
 @socketio.on('wait')
 def handle_ready(payload):
     global rooms
+    #
     room = rooms.get(payload['room_id'])
-
-    if room.ready_player < 1:
-        
+    #
     room.ready_player = room.ready_player - 1
     rooms[room.id] = room
 
-    socketio.emit('room_list', {
+    #
+    socketio.emit('wait', {
         "code": 200,
         "message": 'Room list',
         "rooms": room
@@ -103,11 +99,16 @@ def handle_ready(payload):
 @socketio.on('ready')
 def handle_ready(payload):
     global rooms
+    #
     room = rooms.get(payload['room_id'])
 
+    #
     room.ready_player = room.ready_player + 1
+
+    #
     rooms[room.id] = room
 
+    #
     socketio.emit('room_list', {
         "code": 200,
         "message": 'Room list',
@@ -121,12 +122,13 @@ def handle_create_room(payload):
 
     # construct relationship
     user = users.get(request.sid)
-    room.lead = users.get(request.sid)
-    user.current_room = room
+    room.lead = user.id
+    user.current_room = room.id
 
     # save
     global rooms
     rooms[room.id] = room
+    users[user.id] = user
 
     # response
     socketio.emit('create_room', {
@@ -142,22 +144,23 @@ def handle_join_room(payload):
     # find
     room = rooms.get(payload['room_id'])
 
-    if room is None:
-        # if not exist
+    if room is None or room.isFull():
+        # if not exist or full
         # response
         socketio.emit('join_room', {
             "code": 404,
             "message": 'Not found room'
         })
     else:
-        # if exist
+        # if avable
         # construct relation ship
         user = users.get(request.sid)
-        room.guest = user
-        user.current_room = room
+        room.guest = user.id
+        user.current_room = room.id
 
         # save
         rooms[room.id] = room
+        users[user.id] = users
 
         # response
         socketio.emit('join_room', {
@@ -167,15 +170,44 @@ def handle_join_room(payload):
         }, to = [room.id, request.sid])
 
 @socketio.on('room_start')
-def handle_room_start(payload):
+def handle_join_room(payload):
+    global rooms
     room = rooms.get(payload['room_id'])
-    if room is None or room.isAvailable() == False:
+    if room is None or room.ready_player < 2:
         socketio.emit('room_start', {
-            "code": 404,
-            "message": 'Room not available or not found'
-        })
+            "code": 400,
+            "message": 'Cannot entry game play',
+        }, to = [request.sid])
     else:
-        game = 
+        global games
+        # create
+        game = Game(uuid.uuid4(), room.id)
+
+        # relationship
+        game.room = room.id
+        room.game.append(game.id)
+
+        # save
+        games[game.id] = game
+        rooms[room.id] = room
+        
+        # response
+        socketio.emit('join_room', {
+            "code": 200,
+            "message": 'Joined room',
+            "room": serialization(room)
+        }, to = [room.id, request.sid])
+
+# @socketio.on('room_start')
+# def handle_room_start(payload):
+#     room = rooms.get(payload['room_id'])
+#     if room is None or room.isAvailable() == False:
+#         socketio.emit('room_start', {
+#             "code": 404,
+#             "message": 'Room not available or not found'
+#         })
+#     else:
+#         # game = 
 
 # @socketio.on("message")
 # def handle_message(data):
