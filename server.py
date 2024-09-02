@@ -75,7 +75,7 @@ def handle_fetch_rooms(payload):
     }, to = request.sid)
 
 @socketio.on('change_status')
-def handle_ready(payload):
+def handle_change_status(payload):
     # find
     global rooms
     room = rooms.get(payload['room_id'])
@@ -122,8 +122,8 @@ def handle_create_room(payload):
 
 @socketio.on('join_room')
 def handle_join_room(payload):
-    global rooms
     # find
+    global rooms
     room = rooms.get(payload['room_id'])
     # validate
     if room is None or room.is_full():
@@ -150,7 +150,7 @@ def handle_join_room(payload):
         }, to = [room.guest, room.lead, *room.watchers])
 
 @socketio.on('room_start')
-def handle_join_room(payload):
+def handle_start_game(payload):
     global rooms
     room = rooms.get(payload['room_id'])
     if room is None or room.is_ready() == False:
@@ -204,9 +204,26 @@ def handle_leave_room(payload):
             "room": serialization(room)
         }, to = [request.sid, room.lead, *room.watchers])
 
+# game event -----------------------------------------------------------------------------------------------------
 
-
-
+@socketio.on('strike_out')
+def handle_strike_out(payload):
+    # create
+    room = Room(payload['room_name'])
+    # construct relationship
+    user = users.get(request.sid)
+    room.lead = user.id
+    user.current_room = room.id
+    # save
+    global rooms
+    rooms[room.id] = room
+    users[user.id] = user
+    # response
+    socketio.emit('create_room', {
+        "code": 200,
+        "message": 'Room created',
+        "room": serialization(room)
+    }, to = request.sid)
 
 
 
