@@ -80,9 +80,9 @@ def handle_ready(payload):
     global rooms
     room = rooms.get(payload['room_id'])
     # validate
-    if room.isInRoom(request.sid) == False:
+    if room.is_in_room(request.sid) == False:
         socketio.emit('change_status', {
-            "code": 200,
+            "code": 400,
             "message": 'You cannot change status',
             "rooms": serialization(room)
         }, to = request.sid)
@@ -126,7 +126,7 @@ def handle_join_room(payload):
     # find
     room = rooms.get(payload['room_id'])
     # validate
-    if room is None or room.isFull():
+    if room is None or room.is_full():
         # if not exist or full
         # response
         socketio.emit('join_room', {
@@ -138,10 +138,10 @@ def handle_join_room(payload):
         # construct relation ship
         user = users.get(request.sid)
         room.guest = user.id
-        user.current_room = room.id
+
         # save
         rooms[room.id] = room
-        users[user.id] = users
+        users[user.id] = user
         # response
         socketio.emit('join_room', {
             "code": 200,
@@ -153,7 +153,7 @@ def handle_join_room(payload):
 def handle_join_room(payload):
     global rooms
     room = rooms.get(payload['room_id'])
-    if room is None or room.isReady() == False:
+    if room is None or room.is_ready() == False:
         socketio.emit('room_start', {
             "code": 400,
             "message": "Can't start because not enough members are ready",
@@ -181,7 +181,7 @@ def handle_leave_room(payload):
     global rooms
     room = rooms.get(payload['room_id'])
     # validate
-    if room is None or room.isInRoom(request.sid) == False:
+    if room is None or room.is_in_room(request.sid) == False:
         # if not exist or not in room
         # response
         socketio.emit('leave_room', {
@@ -192,16 +192,15 @@ def handle_leave_room(payload):
         # if avalable
         user = users.get(request.sid)
         room.leave_room(request.sid) # change automatically lead room 
-        user.current_room = None
 
         # save
         rooms[room.id] = room
-        users[user.id] = users
+        users[user.id] = user
 
         # response
-        socketio.emit('leave-room', {
+        socketio.emit('leave_room', {
             "code": 200,
-            "message": 'Joined room',
+            "message": 'leaved room',
             "room": serialization(room)
         }, to = [request.sid, room.lead, *room.watchers])
 

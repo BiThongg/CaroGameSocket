@@ -6,8 +6,8 @@ class User():
     def __init__(self, id, name):
         self.id = str(id)
         self.name = name
-        self.room_played = []
-        self.latest_room = None # In case until in game play if guest/lead suddenly out game, we can rely on this value to continue game
+        # self.room_played = []
+        # self.latest_room = None # In case until in game play if guest/lead suddenly out game, we can rely on this value to continue game
 
 class Room():
     def __init__(self, name):
@@ -28,17 +28,18 @@ class Room():
                 self.guest = None
         elif self.guest == id:
             self.guest = None
-        else:
+        elif id in self.watchers:
             self.watchers.remove(id)
-        self.ready_player.remove(id)
+        if id in self.ready_player:
+            self.ready_player.remove(id)
 
-    def isInRoom(self, id):
-        return self.lead == id or self.guest == id
+    def is_in_room(self, id):
+        return self.lead == id or self.guest == id or id in self.watchers
 
-    def isReady(self):
+    def is_ready(self):
         return len(self.ready_player) == 2
 
-    def isFull(self):
+    def is_full(self):
         return self.lead != None and self.guest != None
 
 class Game():
