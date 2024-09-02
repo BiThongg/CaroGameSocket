@@ -78,12 +78,13 @@ def handle_fetch_rooms(payload):
         "room_list", {"code": 200, "message": "Room list", "rooms": res}, to=request.sid
     )
 
-@socketio.on("change_status")
-def handle_ready(payload):
+@socketio.on('change_status')
+def handle_change_status(payload):
     # find
     global rooms
     room = rooms.get(payload["room_id"])
     # validate
+<<<<<<< HEAD
     if room.isInRoom(request.sid) == False:
         socketio.emit(
             "change_status",
@@ -94,6 +95,14 @@ def handle_ready(payload):
             },
             to=request.sid,
         )
+=======
+    if room.is_in_room(request.sid) == False:
+        socketio.emit('change_status', {
+            "code": 400,
+            "message": 'You cannot change status',
+            "rooms": serialization(room)
+        }, to = request.sid)
+>>>>>>> d68955c7175c842ebb461c68c028f64593c70812
         return
     # set
     if request.sid in room.ready_player:
@@ -136,11 +145,15 @@ def handle_create_room(payload):
 
 @socketio.on("join_room")
 def handle_join_room(payload):
-    global rooms
     # find
+<<<<<<< HEAD
     room = rooms.get(payload["room_id"])
+=======
+    global rooms
+    room = rooms.get(payload['room_id'])
+>>>>>>> d68955c7175c842ebb461c68c028f64593c70812
     # validate
-    if room is None or room.isFull():
+    if room is None or room.is_full():
         # if not exist or full
         # response
         socketio.emit("join_room", {"code": 404, "message": "Not found room"})
@@ -149,10 +162,10 @@ def handle_join_room(payload):
         # construct relation ship
         user = users.get(request.sid)
         room.guest = user.id
-        user.current_room = room.id
+
         # save
         rooms[room.id] = room
-        users[user.id] = users
+        users[user.id] = user
         # response
         socketio.emit(
             "join_room",
@@ -160,6 +173,7 @@ def handle_join_room(payload):
             to=[room.guest, room.lead, *room.watchers],
         )
 
+<<<<<<< HEAD
 
 @socketio.on("room_start")
 def handle_join_room(payload):
@@ -174,6 +188,17 @@ def handle_join_room(payload):
             },
             to=[request.sid],
         )
+=======
+@socketio.on('room_start')
+def handle_start_game(payload):
+    global rooms
+    room = rooms.get(payload['room_id'])
+    if room is None or room.is_ready() == False:
+        socketio.emit('room_start', {
+            "code": 400,
+            "message": "Can't start because not enough members are ready",
+        }, to = [request.sid])
+>>>>>>> d68955c7175c842ebb461c68c028f64593c70812
     else:
         # create
         global games
@@ -202,26 +227,62 @@ def handle_leave_room(payload):
     global rooms
     room = rooms.get(payload["room_id"])
     # validate
-    if room is None or room.isInRoom(request.sid) == False:
+    if room is None or room.is_in_room(request.sid) == False:
         # if not exist or not in room
         # response
         socketio.emit("leave_room", {"code": 400, "message": "Cannot leave room"})
     else:
         # if avalable
         user = users.get(request.sid)
+<<<<<<< HEAD
         room.leave_room(request.sid)  # change automatically lead room
         user.current_room = None
+=======
+        room.leave_room(request.sid) # change automatically lead room 
+>>>>>>> d68955c7175c842ebb461c68c028f64593c70812
 
         # save
         rooms[room.id] = room
-        users[user.id] = users
+        users[user.id] = user
 
         # response
+<<<<<<< HEAD
         socketio.emit(
             "leave-room",
             {"code": 200, "message": "Joined room", "room": serialization(room)},
             to=[request.sid, room.lead, *room.watchers],
         )
+=======
+        socketio.emit('leave_room', {
+            "code": 200,
+            "message": 'leaved room',
+            "room": serialization(room)
+        }, to = [request.sid, room.lead, *room.watchers])
+
+# game event -----------------------------------------------------------------------------------------------------
+
+@socketio.on('strike_out')
+def handle_strike_out(payload):
+    # create
+    room = Room(payload['room_name'])
+    # construct relationship
+    user = users.get(request.sid)
+    room.lead = user.id
+    user.current_room = room.id
+    # save
+    global rooms
+    rooms[room.id] = room
+    users[user.id] = user
+    # response
+    socketio.emit('create_room', {
+        "code": 200,
+        "message": 'Room created',
+        "room": serialization(room)
+    }, to = request.sid)
+
+
+
+>>>>>>> d68955c7175c842ebb461c68c028f64593c70812
 
 
 if __name__ == "__main__":
