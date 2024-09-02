@@ -1,5 +1,8 @@
 import numpy as np
-from entities import *
+from user import User
+from room import Room
+from game import Game
+from caro import Caro
 from flask_cors import CORS
 from datetime import datetime
 import uuid, json, random, string
@@ -25,33 +28,35 @@ def serialization(data):
     return data.__dict__
 
 
-rooms = {}
-users = {}
-games = {}
+caro_game = Caro()
+
+#                   Caro
+#                    |
+#                   Room
+#                  /    \
+#               Game    User
 
 # user event ------------------------------------------------------------------------
 
 
 @socketio.event
 def connect():
-    global users
     user = User(id=request.sid, name=name_generation(5))
-    users[user.id] = user
+    caro_game.users[user.id] = user
     print(">> client {} connected to server".format(user.id))
 
 
 @socketio.event
 def disconnect():
-    global users
-    del users[request.sid]
+    del caro_game.users[request.sid]
     print(">> client {} disconnected to server".format(request.sid))
 
 
 @socketio.on("player_information")
 def handle_player_information(payload):
-    user = users.get(request.sid)
+    user = caro_game.users.get(request.sid)
     user.name = payload["name"]
-    users[request.sid] = user
+    caro_game.users[request.sid] = user
     socketio.emit(
         "player_information",
         {"code": 200, "message": "Player information", "player": serialization(user)},
@@ -62,10 +67,41 @@ def handle_player_information(payload):
 # room event ------------------------------------------------------------------------
 
 
+@socketio.on("get_test")
+def handle_get_test(payload):
+    user1 = User(id=request.sid, name="aaa")
+    user2 = User(id="xnxx2", name="bbb")
+    room = Room("Hello 500 ace")
+    room.lead = request.sid
+    room.guest = user2.id
+    room.ready_player = [request.sid, user2.id]
+    game = Game(user1.id, user2.id)
+    room.game.append(game.id)
+
+    caro_game.rooms[room.id] = room
+    caro_game.users[user1.id] = user1
+    caro_game.users[user2.id] = user2
+    caro_game.games[game.id] = game
+
+    socketio.emit(
+        "get_test",
+        {
+            "code": 200,
+            "message": "Get test",
+            "room": {
+                "room_info": serialization(room),
+                "game_time": game.game_time,
+                "chess_board": json.dumps(game.chess_board.tolist()),
+            },
+        },
+        to=request.sid,
+    )
+
+
 @socketio.on("room_list")
 def handle_fetch_rooms(payload):
     # get rooms existing
-    raw = list(rooms.values())
+    raw = list(caro_game.rooms.values())
     # pagination
     idxfrom = (payload["page"] - 1) * payload["size"]
     dicts = raw[idxfrom : idxfrom + payload["size"] + 1]
@@ -82,8 +118,9 @@ def handle_fetch_rooms(payload):
 @socketio.on("change_status")
 def handle_change_status(payload):
     # find
-    global rooms
-    room = rooms.get(payload["room_id"])
+
+    room = caro_game.rooms.get(payload["room_id"])
+
     # validate
     if room.is_in_room(request.sid) == False:
         socketio.emit(
@@ -96,13 +133,16 @@ def handle_change_status(payload):
             to=request.sid,
         )
         return
+
     # set
     if request.sid in room.ready_player:
         room.ready_player.remove(request.sid)
     else:
         room.ready_player.append(request.sid)
+
     # save
-    rooms[room.id] = room
+    caro_game.rooms[room.id] = room
+
     # send
     socketio.emit(
         "change_status",
@@ -119,14 +159,14 @@ def handle_change_status(payload):
 def handle_create_room(payload):
     # create
     room = Room(payload["room_name"])
+
     # construct relationship
-    user = users.get(request.sid)
+    user = caro_game.users.get(request.sid)
     room.lead = user.id
-    user.current_room = room.id
+
     # save
-    global rooms
-    rooms[room.id] = room
-    users[user.id] = user
+    caro_game.rooms[room.id] = room
+    caro_game.users[user.id] = user
     # response
     socketio.emit(
         "create_room",
@@ -138,8 +178,7 @@ def handle_create_room(payload):
 @socketio.on("join_room")
 def handle_join_room(payload):
     # find
-    global rooms
-    room = rooms.get(payload["room_id"])
+    room = caro_game.rooms.get(payload["room_id"])
     # validate
     if room is None or room.is_full():
         # if not exist or full
@@ -148,12 +187,12 @@ def handle_join_room(payload):
     else:
         # if avalable
         # construct relation ship
-        user = users.get(request.sid)
+        user = caro_game.users.get(request.sid)
         room.guest = user.id
 
         # save
-        rooms[room.id] = room
-        users[user.id] = user
+        caro_game.rooms[room.id] = room
+        caro_game.users[user.id] = user
         # response
         socketio.emit(
             "join_room",
@@ -164,8 +203,7 @@ def handle_join_room(payload):
 
 @socketio.on("room_start")
 def handle_start_game(payload):
-    global rooms
-    room = rooms.get(payload["room_id"])
+    room = caro_game.rooms.get(payload["room_id"])
     if room is None or room.is_ready() == False:
         socketio.emit(
             "room_start",
@@ -177,21 +215,27 @@ def handle_start_game(payload):
         )
     else:
         # create
-        global games
-        game = Game()
+        game = Game(room.lead, room.guest)
+
         # relationship
         game.room = room.id
         room.game.append(game.id)
+
         # save
-        games[game.id] = game
-        rooms[room.id] = room
+        caro_game.games[game.id] = game
+        caro_game.rooms[room.id] = room
+
         # response
         socketio.emit(
             "room_start",
             {
                 "code": 200,
                 "message": "Starting game play success",
-                "room": serialization(room),
+                "data": {
+                    "room": serialization(room),
+                    "game_time": game.game_time,
+                    "chess_board": serialization(game.chess_board.tolist()),
+                },
             },
             to=[*room.ready_player, *room.watchers],
         )
@@ -200,8 +244,8 @@ def handle_start_game(payload):
 @socketio.on("leave_room")
 def handle_leave_room(payload):
     # find
-    global rooms
-    room = rooms.get(payload["room_id"])
+    room = caro_game.rooms.get(payload["room_id"])
+
     # validate
     if room is None or room.is_in_room(request.sid) == False:
         # if not exist or not in room
@@ -209,12 +253,12 @@ def handle_leave_room(payload):
         socketio.emit("leave_room", {"code": 400, "message": "Cannot leave room"})
     else:
         # if avalable
-        user = users.get(request.sid)
+        user = caro_game.users.get(request.sid)
         room.leave_room(request.sid)  # change automatically lead room
 
         # save
-        rooms[room.id] = room
-        users[user.id] = user
+        caro_game.rooms[room.id] = room
+        caro_game.users[user.id] = user
 
         # response
         socketio.emit(
@@ -226,25 +270,25 @@ def handle_leave_room(payload):
 
 # game event -----------------------------------------------------------------------------------------------------
 
+# @socketio.on('strike_out')
+# def handle_strike_out(payload):
+#     game = caro_game.games.get(payload['game_id'])
+#     # validate
+#     if(game.is_can_strike(request.ids) ==  False):
+#         socketio.emit('strike_out', {
+#             "code": 400,
+#             "message": 'Cannot strike out'
+#         }, to=request.ids)
 
-@socketio.on("strike_out")
-def handle_strike_out(payload):
-    # create
-    room = Room(payload["room_name"])
-    # construct relationship
-    user = users.get(request.sid)
-    room.lead = user.id
-    user.current_room = room.id
-    # save
-    global rooms
-    rooms[room.id] = room
-    users[user.id] = user
-    # response
-    socketio.emit(
-        "create_room",
-        {"code": 200, "message": "Room created", "room": serialization(room)},
-        to=request.sid,
-    )
+#     mark = payload['mark']
+#     if game.is_end_game(mark):
+#         game.winner = request.sid
+#         socketio.emit('strike_out', {
+#             "code": 200,
+#             "message": 'End game',
+#             "game": serialization(game)
+#         }, to=request.ids)
+#     else:
 
 
 if __name__ == "__main__":
