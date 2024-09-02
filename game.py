@@ -1,5 +1,6 @@
 import uuid
 import numpy as np
+import caromodel 
 from datetime import datetime
 
 class Game():
@@ -11,6 +12,6 @@ class Game():
             player2_id: str(datetime.now())
         }
         self.start_at = str(datetime.now())
-        self.chess_board = np.zeros((15, 15))
-    def is_can_strike(self, id):
+        self.chess_board = caromodel.CaroGame().board
+        def is_can_strike(self, id):
         return self.game_time[id] != None
