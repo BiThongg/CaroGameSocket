@@ -8,24 +8,6 @@ class User():
         self.name = name
         self.room_played = []
         self.latest_room = None # In case until in game play if guest/lead suddenly out game, we can rely on this value to continue game
-    
-    def setName(self, name):
-        self.name = name
-
-    def getName(self, name):
-        self.name = name
-    
-    def set_requested_game_room(self, room):
-        self.requestedGameRoom = room
-
-    def set_game_mark(self, gameMark):
-        self.gameMark = gameMark
-
-    def start_game_intention(self, gameStart = True):
-        self.gameStartIntention = gameStart
-
-    def get_game_intention(self):
-       return self.gameStartIntention
 
 class Room():
     def __init__(self, name):
@@ -33,10 +15,22 @@ class Room():
         self.name = name
         self.lead = None
         self.guest = None
+        self.status = None
         self.ready_player = []
         self.game = []
         self.watchers = []
-        self.status = None
+    
+    def leave_room(self, id):
+        if self.lead == id:
+            self.lead = None
+            if self.guest != None:
+                self.lead = self.guest
+                self.guest = None
+        elif self.guest == id:
+            self.guest = None
+        else:
+            self.watchers.remove(id)
+        self.ready_player.remove(id)
 
     def isInRoom(self, id):
         return self.lead == id or self.guest == id

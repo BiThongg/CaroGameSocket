@@ -175,5 +175,43 @@ def handle_join_room(payload):
             "room": serialization(room)
         }, to = [*room.ready_player, *room.watchers])
 
+@socketio.on('leave_room')
+def handle_leave_room(payload):
+    # find
+    global rooms
+    room = rooms.get(payload['room_id'])
+    # validate
+    if room is None or room.isInRoom(request.sid) == False:
+        # if not exist or not in room
+        # response
+        socketio.emit('leave_room', {
+            "code": 400,
+            "message": 'Cannot leave room'
+        })
+    else:
+        # if avalable
+        user = users.get(request.sid)
+        room.leave_room(request.sid) # change automatically lead room 
+        user.current_room = None
+
+        # save
+        rooms[room.id] = room
+        users[user.id] = users
+
+        # response
+        socketio.emit('leave-room', {
+            "code": 200,
+            "message": 'Joined room',
+            "room": serialization(room)
+        }, to = [request.sid, room.lead, *room.watchers])
+
+
+
+
+
+
+
+
+
 if __name__ == "__main__":
     socketio.run(app, debug=True)
