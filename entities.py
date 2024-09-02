@@ -1,10 +1,13 @@
+import uuid
 import numpy as np
+from datetime import datetime
 
 class User():
     def __init__(self, id, name):
         self.id = str(id)
         self.name = name
-        self.current_room = None
+        self.room_played = []
+        self.latest_room = None # In case until in game play if guest/lead suddenly out game, we can rely on this value to continue game
     
     def setName(self, name):
         self.name = name
@@ -25,29 +28,33 @@ class User():
        return self.gameStartIntention
 
 class Room():
-    def __init__(self, id, name):
-        self.id = str(id)
+    def __init__(self, name):
+        self.id = str(uuid.uuid4())
         self.name = name
         self.lead = None
         self.guest = None
-        self.ready_player = 0
+        self.ready_player = []
         self.game = []
         self.watchers = []
         self.status = None
 
+    def isInRoom(self, id):
+        return self.lead == id or self.guest == id
+
     def isReady(self):
-        return self.ready_player == 2
+        return len(self.ready_player) == 2
 
     def isFull(self):
         return self.lead != None and self.guest != None
 
 class Game():
-    def __init__(self, id):
-        self.id = id
+    def __init__(self):
+        self.id = str(uuid.uuid4())
         self.winner = None
-        self.room = room
+        self.room = None
+        self.start_at = datetime.now()
         self.chessboard = np.zeros((15, 15))
-    
+
     def add_player(self, objPlayer):
         self.onlineClients.append(objPlayer)
     
