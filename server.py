@@ -23,7 +23,7 @@ def name_generation(length):
     return random_string
 
 def serialization(data):
-    if isinstance(data, dict):
+    if isinstance(data, dict) or isinstance(data, list):
         return json.dumps(data)
     return data.__dict__ 
 
@@ -34,6 +34,13 @@ caro_game = Caro()
 #                   Room
 #                  /    \   
 #               Game    User
+
+
+@socketio.on('hehe')
+def handle_hehe():
+    socketio.emit('test', {
+        "minh_triet": 'chicken'
+    }, to=request.sid)
 
 # user event ------------------------------------------------------------------------
 
@@ -63,6 +70,8 @@ def handle_player_information(payload):
 
 @socketio.on('get_test')
 def handle_get_test(payload):
+    # chess_board = json.loads(payload['chess_board'])
+    # print(chess_board[0][1] + 2)
     user1 = User(id=request.sid, name="aaa")
     user2 = User(id="xnxx2", name="bbb")
     room = Room("Hello 500 ace")
@@ -82,9 +91,10 @@ def handle_get_test(payload):
         "message": 'Get test',
         "room": {
             'room_info': serialization(room),
-            'game_time': game.game_time,
+            'game_time': game.game_detail,
             'chess_board': json.dumps(game.chess_board.tolist())
-        }
+        },
+        "game": serialization(game)
     }, to=request.sid)
 
 
@@ -177,43 +187,46 @@ def handle_join_room(payload):
         # save
         caro_game.rooms[room.id] = room
         caro_game.users[user.id] = user
+
         # response
-        socketio.emit('join_room', {
-            "code": 200,
-            "message": 'Joined room',
-            "room": serialization(room)
-        }, to = [room.guest, room.lead, *room.watchers])
+        # socketio.emit('join_room', {
+        #     "code": 200,
+        #     "message": 'Joined room',
+        #     "room": serialization(room)
+        # }, to = [room.guest, room.lead, *room.watchers])
+        handle_start_game(payload)
 
 @socketio.on('room_start')
 def handle_start_game(payload):
     room = caro_game.rooms.get(payload['room_id'])
-    if room is None or room.is_ready() == False:
-        socketio.emit('room_start', {
-            "code": 400,
-            "message": "Can't start because not enough members are ready",
-        }, to = [request.sid])
-    else:
+    # if room is None or room.is_ready() == False:
+    #     socketio.emit('room_start', {
+    #         "code": 400,
+    #         "message": "Can't start because not enough members are ready",
+    #     }, to = [request.sid])
+    # else:
         # create
-        game = Game(room.lead, room.guest)
+    game = Game(room.lead, room.guest)
 
-        # relationship
-        game.room = room.id
-        room.game.append(game.id)
+    # relationship
+    game.room_id = room.id
+    room.game_ids.append(game.id)
 
-        # save
-        caro_game.games[game.id] = game
-        caro_game.rooms[room.id] = room
+    # save
+    caro_game.games[game.id] = game
+    caro_game.rooms[room.id] = room
 
-        # response
-        socketio.emit('room_start', {
-            "code": 200,
-            "message": 'Starting game play success',
-            "data": {
-                "room": serialization(room),
-                "game_time": game.game_time,
-                "chess_board": serialization(game.chess_board.tolist())
-            } 
-        }, to = [*room.ready_player, *room.watchers])
+    # response
+    socketio.emit('room_start', {
+        "code": 200,
+        "message": 'Starting game play success',
+        "data": {
+            "room": serialization(room),
+            "game_id": game.id,
+            "game_time": game.game_detail,
+            "chess_board": serialization(game.chess_board.tolist())
+        } 
+    }, to = [room.lead, room.guest, *room.watchers])
 
 @socketio.on('leave_room')
 def handle_leave_room(payload):
@@ -228,43 +241,73 @@ def handle_leave_room(payload):
             "code": 400,
             "message": 'Cannot leave room'
         })
-    else:
-        # if avalable
-        user = caro_game.users.get(request.sid)
-        room.leave_room(request.sid) # change automatically lead room 
+        return
+    # if avalable
+    user = caro_game.users.get(request.sid)
+    room.leave_room(request.sid) # change automatically lead room 
 
-        # save
-        caro_game.rooms[room.id] = room
-        caro_game.users[user.id] = user
+    # save
+    caro_game.rooms[room.id] = room
+    caro_game.users[user.id] = user
 
-        # response
-        socketio.emit('leave_room', {
-            "code": 200,
-            "message": 'leaved room',
-            "room": serialization(room)
-        }, to = [request.sid, room.lead, *room.watchers])
+    # response
+    socketio.emit('leave_room', {
+        "code": 200,
+        "message": 'leaved room',
+        "room": serialization(room)
+    }, to = [room.guest, room.lead, *room.watchers])
 
 # game event -----------------------------------------------------------------------------------------------------
 
-# @socketio.on('strike_out')
-# def handle_strike_out(payload):
-#     game = caro_game.games.get(payload['game_id'])
-#     # validate
-#     if(game.is_can_strike(request.ids) ==  False):
-#         socketio.emit('strike_out', {
-#             "code": 400,
-#             "message": 'Cannot strike out'
-#         }, to=request.ids)
+@socketio.on('strike_out')
+def handle_strike_out(payload):
+    # find
+    game = caro_game.games.get(payload['game_id'])
+    room = caro_game.rooms.get(game.room_id)
 
-#     mark = payload['mark']
-#     if game.is_end_game(mark):
-#         game.winner = request.sid
-#         socketio.emit('strike_out', {
-#             "code": 200,
-#             "message": 'End game',
-#             "game": serialization(game)
-#         }, to=request.ids)
-#     else:
+    # validate is player of this room and is my turn ?
+    if game.is_can_strike(request.sid) == False and game.is_my_turn(request.sid) == False:
+        socketio.emit('strike_out', {
+            "code": 400,
+            "message": 'Cannot strike out'
+        }, to=request.sid)
+        return
+
+    # validate out of time can strike out
+    if game.validiate_time_limit_set_latest_time_and(request.sid) == False:
+        game.winner = game.game_detail[request.sid]['competitor_id']
+        socketio.emit('end_game', {
+            "code": 200,
+            "message": 'End end',
+            "room": serialization(room),
+            "game_id": game.id,
+            "game_time": game.game_detail,
+            "chess_board": serialization(game.chess_board.tolist())
+        }, to=[room.guest, room.lead, room.watchers])
+        return
+
+    # mark point
+    position = payload['position']
+    game.mark(request.sid, position)
+
+    if game.is_end_game():
+        # end game
+        game.winner = request.sid
+        socketio.emit('end_game', {
+            "code": 200,
+            "message": 'End game',
+            "game": serialization(game)
+        }, to=request.sid)
+    else:
+        # continue next turn
+        socketio.emit('strike_out', {
+            "code": 200,
+            "message": 'Next turn',
+            "room": serialization(room),
+            "game_id": game.id,
+            "game_time": game.game_detail,
+            "chess_board": serialization(game.chess_board.tolist())
+        }, to=[room.guest, room.lead, *room.watchers])
 
 
 if __name__ == "__main__":

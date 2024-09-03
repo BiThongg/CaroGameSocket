@@ -10,7 +10,7 @@ class Room():
         self.guest = None
         self.status = None
         self.ready_player = []
-        self.game = []
+        self.game_ids = []
         self.watchers = []
     
     def leave_room(self, id):
