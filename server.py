@@ -28,6 +28,10 @@ def serialization(data):
     return data.__dict__ 
 
 caro_game = Caro()
+unknown_user = {
+    'id': 'unknown',
+    'name': 'unknown',
+}
 
 #                   Caro
 #                    |
@@ -55,23 +59,31 @@ def disconnect():
     del caro_game.users[request.sid]
     print(">> client {} disconnected to server".format(request.sid))
 
-@socketio.on('player_information')
+@socketio.on('info')
+def handle_get_info(payload):
+    user = caro_game.users.get(request.sid)
+    socketio.emit('info', {
+        'user': serialization(user)
+    }, to=request.sid)
+
+@socketio.on('change_user_information')
 def handle_player_information(payload):
     user = caro_game.users.get(request.sid)
     user.name = payload['name']
     caro_game.users[request.sid] = user
-    socketio.emit('player_information', {
+    socketio.emit('info', {
         "code": 200,
         "message": 'Player information',
-        "player": serialization(user)
-    }, to = user.id)
+        "user": serialization(user)
+    }, to = request.sid)
 
 # room event ------------------------------------------------------------------------
 
 @socketio.on('get_test')
 def handle_get_test(payload):
-    # chess_board = json.loads(payload['chess_board'])
-    # print(chess_board[0][1] + 2)
+    a = datetime.strptime(str(datetime.now()), "%Y-%m-%d %H:%M:%S.%f")
+    b = datetime.strptime(str(datetime.now()), "%Y-%m-%d %H:%M:%S.%f")
+    print()
     user1 = User(id=request.sid, name="aaa")
     user2 = User(id="xnxx2", name="bbb")
     room = Room("Hello 500 ace")
@@ -79,7 +91,7 @@ def handle_get_test(payload):
     room.guest = user2.id
     room.ready_player = [request.sid, user2.id]
     game = Game(user1.id, user2.id)
-    room.game.append(game.id)
+    room.game_ids.append(game.id)
 
     caro_game.rooms[room.id] = room
     caro_game.users[user1.id] = user1
@@ -94,7 +106,6 @@ def handle_get_test(payload):
             'game_time': game.game_detail,
             'chess_board': json.dumps(game.chess_board.tolist())
         },
-        "game": serialization(game)
     }, to=request.sid)
 
 
@@ -102,6 +113,7 @@ def handle_get_test(payload):
 def handle_fetch_rooms(payload):
     # get rooms existing
     raw = list(caro_game.rooms.values())
+
     # pagination
     idxfrom = (payload['page'] - 1) * payload['size']
     dicts = raw[idxfrom : idxfrom + payload['size'] + 1]
@@ -109,6 +121,7 @@ def handle_fetch_rooms(payload):
     res = []
     for room in dicts:
         res.append(serialization(room))
+
     # send
     socketio.emit('room_list', {
         "code": 200,
@@ -119,7 +132,6 @@ def handle_fetch_rooms(payload):
 @socketio.on('change_status')
 def handle_change_status(payload):
     # find
-    
     room = caro_game.rooms.get(payload['room_id'])
 
     # validate
@@ -144,7 +156,9 @@ def handle_change_status(payload):
     socketio.emit('change_status', {
         "code": 200,
         "message": 'change status successfully',
-        "rooms": serialization(room)
+        "room": serialization(room),
+        "guest": serialization(caro_game.users.get(room.guest)) if room.guest != None else unknown_user,
+        "lead": serialization(caro_game.users.get(room.lead)) if room.lead != None else unknown_user
     }, to = [room.guest, room.lead, *room.watchers])
 
 @socketio.on('create_room')
@@ -159,17 +173,22 @@ def handle_create_room(payload):
     # save
     caro_game.rooms[room.id] = room
     caro_game.users[user.id] = user
+
     # response
+    emit('create_room', {}, broadcast=True)
     socketio.emit('create_room', {
         "code": 200,
         "message": 'Room created',
-        "room": serialization(room)
-    }, to = request.sid)
+        "room": serialization(room),
+        "guest": unknown_user,
+        "lead": serialization(user)
+    }, to=request.sid)
 
 @socketio.on('join_room')
 def handle_join_room(payload):
     # find
     room = caro_game.rooms.get(payload['room_id'])
+
     # validate
     if room is None or room.is_full():
         # if not exist or full
@@ -189,44 +208,46 @@ def handle_join_room(payload):
         caro_game.users[user.id] = user
 
         # response
-        # socketio.emit('join_room', {
-        #     "code": 200,
-        #     "message": 'Joined room',
-        #     "room": serialization(room)
-        # }, to = [room.guest, room.lead, *room.watchers])
-        handle_start_game(payload)
+        socketio.emit('join_room', {
+            "code": 200,
+            "message": 'Joined room',
+            "room": serialization(room),
+            "guest": serialization(caro_game.users.get(room.guest)),
+            "lead": serialization(caro_game.users.get(room.lead))
+        }, to = [room.guest, room.lead, *room.watchers])
+        # handle_start_game(payload)
 
 @socketio.on('room_start')
 def handle_start_game(payload):
     room = caro_game.rooms.get(payload['room_id'])
-    # if room is None or room.is_ready() == False:
-    #     socketio.emit('room_start', {
-    #         "code": 400,
-    #         "message": "Can't start because not enough members are ready",
-    #     }, to = [request.sid])
-    # else:
+    if room is None or room.is_ready() == False:
+        socketio.emit('room_start', {
+            "code": 400,
+            "message": "Can't start because not enough members are ready",
+        }, to = [request.sid])
+    else:
         # create
-    game = Game(room.lead, room.guest)
+        game = Game(room.lead, room.guest)
 
-    # relationship
-    game.room_id = room.id
-    room.game_ids.append(game.id)
+        # relationship
+        game.room_id = room.id
+        room.game_ids.append(game.id)
 
-    # save
-    caro_game.games[game.id] = game
-    caro_game.rooms[room.id] = room
+        # save
+        caro_game.games[game.id] = game
+        caro_game.rooms[room.id] = room
 
-    # response
-    socketio.emit('room_start', {
-        "code": 200,
-        "message": 'Starting game play success',
-        "data": {
-            "room": serialization(room),
-            "game_id": game.id,
-            "game_time": game.game_detail,
-            "chess_board": serialization(game.chess_board.tolist())
-        } 
-    }, to = [room.lead, room.guest, *room.watchers])
+        # response
+        socketio.emit('room_start', {
+            "code": 200,
+            "message": 'Starting game play success',
+            "data": {
+                "room": serialization(room),
+                "game_id": game.id,
+                "game_detail": game.game_detail,
+                "chess_board": serialization(game.chess_board.tolist())
+            } 
+        }, to = [room.lead, room.guest, *room.watchers])
 
 @socketio.on('leave_room')
 def handle_leave_room(payload):
@@ -244,7 +265,10 @@ def handle_leave_room(payload):
         return
     # if avalable
     user = caro_game.users.get(request.sid)
-    room.leave_room(request.sid) # change automatically lead room 
+    room.leave_room(request.sid)
+    if room.lead is None:
+        del caro_game.rooms[room.id]
+        return
 
     # save
     caro_game.rooms[room.id] = room
@@ -254,8 +278,10 @@ def handle_leave_room(payload):
     socketio.emit('leave_room', {
         "code": 200,
         "message": 'leaved room',
-        "room": serialization(room)
-    }, to = [room.guest, room.lead, *room.watchers])
+        "room": serialization(room),
+        "guest": serialization(caro_game.users.get(room.guest)) if room.guest != None else unknown_user,
+        "lead": serialization(caro_game.users.get(room.lead)) if room.lead != None else unknown_user
+    }, to = [ room.lead, *room.watchers])
 
 # game event -----------------------------------------------------------------------------------------------------
 
@@ -266,7 +292,7 @@ def handle_strike_out(payload):
     room = caro_game.rooms.get(game.room_id)
 
     # validate is player of this room and is my turn ?
-    if game.is_can_strike(request.sid) == False and game.is_my_turn(request.sid) == False:
+    if game.is_can_strike(request.sid) == False or game.is_my_turn(request.sid) == False:
         socketio.emit('strike_out', {
             "code": 400,
             "message": 'Cannot strike out'
@@ -283,9 +309,10 @@ def handle_strike_out(payload):
             "game_id": game.id,
             "game_time": game.game_detail,
             "chess_board": serialization(game.chess_board.tolist())
-        }, to=[room.guest, room.lead, room.watchers])
+        }, to=[room.guest, room.lead, *room.watchers])
         return
-
+    # competitor_id = game.game_detail[request.sid]['competitor_id']
+    # print(game.game_detail[request.sid]['latest_time'] <= game.game_detail[competitor_id]['latest_time'])
     # mark point
     position = payload['position']
     game.mark(request.sid, position)

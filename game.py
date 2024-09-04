@@ -30,6 +30,7 @@ class Game():
     
     def is_my_turn(self, id):
         competitor_id = self.game_detail[id]['competitor_id']
+        print(self.game_detail[id]['latest_time'] <= self.game_detail[competitor_id]['latest_time'])
         return self.game_detail[id]['latest_time'] <= self.game_detail[competitor_id]['latest_time']
     
     def mark(self, id, position):
@@ -37,8 +38,8 @@ class Game():
 
     def validiate_time_limit_set_latest_time_and(self, id):
         competitor_id = self.game_detail[id]['competitor_id']
-        time_consuming = datetime.now() - datetime.strptime(self.game_detail[competitor_id]['latest_time'], "%Y-%m-%d %H:%M:%S")
-        if time_consuming.total_seconds() > 20:
+        time_consuming = datetime.now() - datetime.strptime(self.game_detail[competitor_id]['latest_time'], "%Y-%m-%d %H:%M:%S.%f")
+        if int(time_consuming.total_seconds()) > 50:
             return False
         self.game_detail[id]['latest_time'] = str(datetime.now())
         return True
