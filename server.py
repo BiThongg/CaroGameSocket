@@ -155,7 +155,7 @@ def handle_change_status(payload):
     # send
     socketio.emit('change_status', {
         "code": 200,
-        "message": 'change status successfully',
+        "message": caro_game.users.get(request.sid).name + ' change status successfully',
         "room": serialization(room),
         "guest": serialization(caro_game.users.get(room.guest)) if room.guest != None else unknown_user,
         "lead": serialization(caro_game.users.get(room.lead)) if room.lead != None else unknown_user
@@ -285,6 +285,20 @@ def handle_leave_room(payload):
 
 # game event -----------------------------------------------------------------------------------------------------
 
+@socketio.on('surrender')
+def handle_surrender(payload):
+    # find
+    game = caro_game.games.get(payload['game_id'])
+    room = caro_game.rooms.get(game.room_id)
+
+    if game.game_detail[request.sid] != None:
+        socketio.emit('game_end', {
+            "code": 200,
+            "message": 'Game ending',
+            'loser': caro_game.users.get(request.sid).name,
+            'winner': caro_game.users.get(game.game_detail[request.sid]['competitor_id']).name,
+        }, to = [room.guest, room.lead, *room.watchers])
+
 @socketio.on('strike_out')
 def handle_strike_out(payload):
     # find
@@ -292,7 +306,7 @@ def handle_strike_out(payload):
     room = caro_game.rooms.get(game.room_id)
 
     # validate is player of this room and is my turn ?
-    if game.is_can_strike(request.sid) == False or game.is_my_turn(request.sid) == False:
+    if game.is_can_strike(request.sid, payload['position']) == False or game.is_my_turn(request.sid) == False:
         socketio.emit('strike_out', {
             "code": 400,
             "message": 'Cannot strike out'
@@ -305,36 +319,42 @@ def handle_strike_out(payload):
         socketio.emit('end_game', {
             "code": 200,
             "message": 'End end',
-            "room": serialization(room),
-            "game_id": game.id,
-            "game_time": game.game_detail,
-            "chess_board": serialization(game.chess_board.tolist())
+
+            "data": {
+                "room": serialization(room),
+                "game_id": game.id,
+                "game_detail": game.game_detail,
+                "chess_board": serialization(game.chess_board.tolist())
+            }
         }, to=[room.guest, room.lead, *room.watchers])
         return
-    # competitor_id = game.game_detail[request.sid]['competitor_id']
-    # print(game.game_detail[request.sid]['latest_time'] <= game.game_detail[competitor_id]['latest_time'])
+
     # mark point
     position = payload['position']
     game.mark(request.sid, position)
 
-    if game.is_end_game():
+    if game.is_end_game(request.sid, payload['position']) == True:
         # end game
         game.winner = request.sid
         socketio.emit('end_game', {
             "code": 200,
             "message": 'End game',
-            "game": serialization(game)
-        }, to=request.sid)
+            'winner': caro_game.users.get(request.sid).name,
+            'loser': caro_game.users.get(game.game_detail[request.sid]['competitor_id']).name,
+            "chess_board": serialization(game.chess_board.tolist())
+        }, to=[room.guest, room.lead, *room.watchers])
     else:
         # continue next turn
         socketio.emit('strike_out', {
             "code": 200,
             "message": 'Next turn',
-            "room": serialization(room),
-            "game_id": game.id,
-            "game_time": game.game_detail,
-            "chess_board": serialization(game.chess_board.tolist())
-        }, to=[room.guest, room.lead, *room.watchers])
+            "data": {
+                "room": serialization(room),
+                "game_id": game.id,
+                "game_detail": game.game_detail,
+                "chess_board": serialization(game.chess_board.tolist())
+            } 
+        }, to = [room.lead, room.guest, *room.watchers])
 
 
 if __name__ == "__main__":

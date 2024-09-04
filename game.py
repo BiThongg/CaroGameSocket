@@ -22,11 +22,44 @@ class Game():
         }
         self.chess_board = np.zeros((15, 15))
 
-    def is_end_game(self):
+    # def check_end_game(self, direc, my_syl, current_point, start_point):
+    #     if
+
+    def is_end_game(self, id, position):
+        player = self.game_detail[id]['value']
+        x = position['y']
+        y = position['x']
+
+        directions = [
+            (1, 0),   # Horizontal
+            (0, 1),   # Vertical
+            (1, 1),   # Diagonal (top-left to bottom-right)
+            (1, -1)   # Diagonal (bottom-left to top-right)
+        ]
+        
+        for dx, dy in directions:
+            count = 1
+            # Kiểm tra theo hướng dương
+            i, j = x + dx, y + dy
+            while 0 <= i < len(self.chess_board) and 0 <= j < len(self.chess_board[0]) and self.chess_board[i][j] == player:
+                count += 1
+                i += dx
+                j += dy
+                
+            # Kiểm tra theo hướng ngược lại
+            i, j = x - dx, y - dy
+            while 0 <= i < len(self.chess_board) and 0 <= j < len(self.chess_board[0]) and self.chess_board[i][j] == player:
+                count += 1
+                i -= dx
+                j -= dy
+                
+            if count >= 5:
+                return True
+                
         return False
 
-    def is_can_strike(self, id):
-        return self.game_detail[id] != None
+    def is_can_strike(self, id, position):
+        return self.game_detail[id] != None and self.chess_board[position['y'], position['x']] == 0.0
     
     def is_my_turn(self, id):
         competitor_id = self.game_detail[id]['competitor_id']
