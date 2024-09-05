@@ -20,6 +20,9 @@ class Room:
 
     def add_user(self, user: User):
         self.users.append(user.id)
+    
+    def add_game(self, game: Game): 
+        self.game = game
 
         # self.lead = None
         # self.guest = None
