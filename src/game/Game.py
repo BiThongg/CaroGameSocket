@@ -5,6 +5,10 @@ from src.util.cell import Cell
 from src.util.point import Point
 from typing import List
 import random
+import pandas as pd
+from rich.console import Console
+from rich.table import Table
+
 
 if TYPE_CHECKING:
     from src.player.Player import Player
@@ -30,10 +34,10 @@ class Game(ABC):
         if self.turn != player.symbol:
             raise Exception("Not your turn")
 
-        if self.board[point.x][point.y] != Cell.NONE:
+        if self.board[point.y][point.x] != Cell.NONE:
             raise Exception("Cell is not empty")
 
-        self.board[point.x][point.y] = player.symbol
+        self.board[point.y][point.x] = player.symbol
         self.updateTurn()
         return
 
@@ -53,14 +57,37 @@ class Game(ABC):
         return False
 
     def drawBoard(self) -> None:
-        for row in self.board:
-            for cell in row:
-                if cell == Cell.NONE:
-                    print(" ", end=" ")
-                else:
-                    print(cell.value, end=" ")
+        # prefix base on the size of number "i"
+        table = Table(title="GAME SIEU DINH")
+        # rows = [
+        #     ["John", "Doe", "45"],
+        #     ["Jane", "Doe", "32"],
+        #     ["Mary", "Smith", "25"],
+        # ]
+        # Map Cell.value in the board like the rows above
+        rows = []
+        for i, row in enumerate(self.board):
+            s = list(map(lambda x: " " if x == Cell.NONE else x.value, row))
+            rows.append([str(i)] + s)
 
-        print(end="\n")
+        columns = ["Y/X"]
+        for i in range(len(self.board[0])):
+            columns.append(str(i))
+
+        for column in columns:
+            table.add_column(column)
+
+        for row in rows:
+            table.add_row(*row, style="bright_green")
+
+        console = Console()
+        console.print(table)
+
+        # prefixSpace = " " * len(str(len(self.board)))
+        # print(prefixSpace + "  " + "   ".join(map(str, range(len(self.board[0])))))
+        # for i, row in enumerate(self.board):
+        #     s = map(lambda x: " " if x == Cell.NONE else x.value, row)
+        #     print(str(i) + " | " + " | ".join(s) + " |")
         return
 
     @abstractmethod
