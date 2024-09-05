@@ -5,10 +5,10 @@ from flask import Flask, json, request
 from flask_socketio import SocketIO, emit
 
 from dto.room import RoomDTO
-from room import Room
-import room
-from user import User
-import user
+from src.room.room import Room
+import src.room.room as room
+from src.room.user import User
+import src.room.user as user
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = "secret!"

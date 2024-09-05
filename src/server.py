@@ -7,8 +7,8 @@ import uuid, json, random, string
 from flask import Flask, session, request
 from flask_socketio import SocketIO, emit, join_room, leave_room, send
 
-from storage import Storage
-from user import User
+from src.util.storage import Storage
+from src.room.user import User
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = "secret!"
@@ -95,6 +95,7 @@ def get_user(payload):
         },
         to=requestId,
     )
+
 
 @socketio.on("get_users")
 def get_users(payload):

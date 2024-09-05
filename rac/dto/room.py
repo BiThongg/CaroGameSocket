@@ -1,5 +1,5 @@
-from room import Room
-from user import User
+from src.room.room import Room
+from src.room.user import User
 
 
 class RoomDTO:

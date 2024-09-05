@@ -1,10 +1,8 @@
 from typing import List
 import uuid
-import numpy as np
-from datetime import datetime
 
-from game import Game
-from user import User
+from src.game import Game
+from src.User import User
 
 
 class Room:
@@ -20,8 +18,8 @@ class Room:
 
     def add_user(self, user: User):
         self.users.append(user.id)
-    
-    def add_game(self, game: Game): 
+
+    def add_game(self, game: Game):
         self.game = game
 
         # self.lead = None

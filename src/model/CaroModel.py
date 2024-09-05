@@ -1,42 +1,22 @@
 import time
-
-O = "O"
-X = "X"
-EMPTY = None
+from src.util.cell import Cell
 
 
-class CaroGame:
-    X = "X"
-    O = "O"
-    EMPTY = None
-    sizeMatrix = 3
+class CaroModel:
     board = []
     start = time.time()
 
-    time_limit = 6
+    time_limit = 1
 
     def __init__(self):
         pass
-
-    def initialize_game(self):
-        self.board = [
-            [CaroGame.EMPTY for _ in range(CaroGame.sizeMatrix)]
-            for _ in range(CaroGame.sizeMatrix)
-        ]
-
-    def draw_board(self):
-        for i in range(0, self.sizeMatrix):
-            for j in range(0, self.sizeMatrix):
-                print("{}|".format(self.board[i][j]), end=" ")
-            print()
-        print()
 
     def actions(self, board):
         possible_actions = set()
 
         for i in range(board.__len__()):
             for j in range(board[i].__len__()):
-                if board[j][i] == self.EMPTY:
+                if board[j][i] == Cell.NONE:
                     possible_actions.add((j, i))
 
         return possible_actions
@@ -61,17 +41,17 @@ class CaroGame:
 
         for i in range(self.sizeMatrix):
             for j in range(self.sizeMatrix):
-                if board[j][i] == self.X:
+                if board[j][i] == Cell.X:
                     x_count += 1
-                elif board[j][i] == self.O:
+                elif board[j][i] == Cell.O:
                     o_count += 1
 
         print(x_count, o_count)
 
         if x_count > o_count:
-            return self.O
+            return Cell.O
         else:
-            return self.X
+            return Cell.X
 
     def terminal(self, board):
         if self.winner(board) is not None:
@@ -79,7 +59,7 @@ class CaroGame:
 
         for i in range(board.__len__()):
             for j in range(board[i].__len__()):
-                if board[j][i] == self.EMPTY:
+                if board[j][i] == Cell.NONE:
                     return False
 
         return True
@@ -87,11 +67,10 @@ class CaroGame:
     def winner(self, board):
         # caro _sizex15, 5 for win
         _size = board.__len__()
-        EMPTY = None
 
         for i in range(_size):
             for j in range(_size):
-                if board[i][j] != EMPTY:
+                if board[i][j] != Cell.NONE:
                     # check horizontal
                     if j < _size - 4:
                         if (
@@ -135,9 +114,9 @@ class CaroGame:
                     return None
 
     def utility(self, board):
-        if self.winner(board) == self.X:
+        if self.winner(board) == Cell.X:
             return 1
-        elif self.winner(board) == self.O:
+        elif self.winner(board) == Cell.O:
             return -1
         else:
             return 0
@@ -146,7 +125,7 @@ class CaroGame:
         if self.terminal(board):
             return self.utility(board)
 
-        if self.player(board) == self.X:
+        if self.player(board) == Cell.X:
             return self.max_alpha_beta(-2, 2)
         return 1
 
@@ -158,9 +137,9 @@ class CaroGame:
         result = self.terminal(board)
         if result is True:
             winner_person = self.winner(board)
-            if winner_person == self.X:
+            if winner_person == Cell.X:
                 return (1, 0, 0)
-            elif winner_person == self.O:
+            elif winner_person == Cell.O:
                 return (-1, 0, 0)
             else:
                 return (0, 0, 0)
@@ -171,18 +150,18 @@ class CaroGame:
             for j in range(0, board[i].__len__()):
                 if (time.time() - start) > self.time_limit:
                     break
-                if board[i][j] == EMPTY:
-                    board[i][j] = O
+                if board[i][j] == Cell.NONE:
+                    board[i][j] = Cell.O
                     (m, min_i, min_j) = self.min_alpha_beta(alpha, beta, board)
                     if m == 1:
-                        board[i][j] = EMPTY
+                        board[i][j] = Cell.NONE
                         return (1, i, j)
 
                     if m > maxv:
                         maxv = m
                         px = i
                         py = j
-                    board[i][j] = EMPTY
+                    board[i][j] = Cell.NONE
 
                     if maxv >= beta:
                         return (maxv, px, py)
@@ -201,9 +180,9 @@ class CaroGame:
         result = self.terminal(board)
         if result is True:
             winner_person = self.winner(board)
-            if winner_person == self.X:
+            if winner_person == Cell.X:
                 return (1, 0, 0)
-            elif winner_person == self.O:
+            elif winner_person == Cell.O:
                 return (-1, 0, 0)
             else:
                 return (0, 0, 0)
@@ -214,18 +193,18 @@ class CaroGame:
                 if (time.time() - start) > self.time_limit:
                     break
 
-                if board[i][j] == EMPTY:
-                    board[i][j] = X
+                if board[i][j] == Cell.NONE:
+                    board[i][j] = Cell.X
                     (m, max_i, max_j) = self.max_alpha_beta(alpha, beta, board)
                     if m == -1:
-                        board[i][j] = EMPTY
+                        board[i][j] = Cell.NONE
                         return (-1, i, j)
 
                     if m < minv:
                         minv = m
                         qx = i
                         qy = j
-                    board[i][j] = EMPTY
+                    board[i][j] = Cell.NONE
 
                     if minv <= alpha:
                         return (minv, qx, qy)
@@ -234,27 +213,3 @@ class CaroGame:
                         beta = minv
 
         return (minv, qx, qy)
-
-
-sessionPlay = CaroGame()
-sessionPlay.board = [
-    [X, O, X, O, X, O],
-    [O, X, O, X, O, X],
-    [X, O, EMPTY, O, X, O],
-    [O, X, O, X, O, X],
-    [X, O, X, O, X, O],
-    [O, X, O, X, O, X],
-]
-
-# sessionPlay.draw_board()
-# sessionPlay.board[0][0] = X
-# print(sessionPlay.actions(sessionPlay.board))
-
-
-# print(sessionPlay.player(sessionPlay.board))
-
-# (a, b, c) = sessionPlay.min_alpha_beta(-2, 2)
-# print("min value: ", a)
-# print("next move: ", b, ",", c)
-
-# print the true statement that in state have check distance time
