@@ -9,14 +9,14 @@ class CaroGame:
     X = "X"
     O = "O"
     EMPTY = None
-    sizeMatrix = 6
+    sizeMatrix = 3
     board = []
     start = time.time()
 
-    time_limit = 0.3
+    time_limit = 6
 
     def __init__(self):
-        self.initialize_game()
+        pass
 
     def initialize_game(self):
         self.board = [
@@ -34,8 +34,8 @@ class CaroGame:
     def actions(self, board):
         possible_actions = set()
 
-        for i in range(self.sizeMatrix):
-            for j in range(self.sizeMatrix):
+        for i in range(board.__len__()):
+            for j in range(board[i].__len__()):
                 if board[j][i] == self.EMPTY:
                     possible_actions.add((j, i))
 
@@ -47,7 +47,7 @@ class CaroGame:
 
         new_board = [row[:] for row in board]
 
-        new_board[action[0]][action[1]] = self.player(self.board)
+        new_board[action[0]][action[1]] = self.player(board)
 
         return new_board
 
@@ -77,8 +77,8 @@ class CaroGame:
         if self.winner(board) is not None:
             return True
 
-        for i in range(self.sizeMatrix):
-            for j in range(self.sizeMatrix):
+        for i in range(board.__len__()):
+            for j in range(board[i].__len__()):
                 if board[j][i] == self.EMPTY:
                     return False
 
@@ -86,9 +86,8 @@ class CaroGame:
 
     def winner(self, board):
         # caro _sizex15, 5 for win
-        _size = self.sizeMatrix
+        _size = board.__len__()
         EMPTY = None
-        board = self.board
 
         for i in range(_size):
             for j in range(_size):
@@ -151,78 +150,14 @@ class CaroGame:
             return self.max_alpha_beta(-2, 2)
         return 1
 
-    # def max_alpha_beta(self, alpha, beta):
-    #     max_v = -2
-    #     px = None
-    #     py = None
-    #
-    #     result = self.terminal(self.board)
-    #     if result is True:
-    #         winner_person = self.winner(self.board)
-    #         if winner_person == self.X:
-    #             return (-1, 0, 0)
-    #         elif winner_person == self.O:
-    #             return (1, 0, 0)
-    #         else:
-    #             return 0
-    #
-    #     for action in self.actions(self.board):
-    #         i, j = action
-    #         self.board[i][j] = self.X
-    #         (m, min_i, min_j) = self.min_alpha_beta(alpha, beta)
-    #         if m > max_v:
-    #             max_v = m
-    #             px = i
-    #             py = j
-    #         self.board[i][j] = self.EMPTY
-    #
-    #         if max_v >= beta:
-    #             return (max_v, px, py)
-    #         if max_v > alpha:
-    #             alpha = max_v
-    #     return (max_v, px, py)
-    #
-    # def min_alpha_beta(self, alpha, beta):
-    #     min_v = 2
-    #     px = None
-    #     py = None
-    #
-    #     result = self.terminal(self.board)
-    #     if result is True:
-    #         winner_person = self.winner(self.board)
-    #         if winner_person == self.X:
-    #             return (-1, 0, 0)
-    #         elif winner_person == self.O:
-    #             return (1, 0, 0)
-    #         else:
-    #             return 0
-    #
-    #     for action in self.actions(self.board):
-    #         i, j = action
-    #         print(i, j)
-    #         (m, min_i, min_j) = self.max_alpha_beta(alpha, beta)
-    #         if m < min_v:
-    #             min_v = m
-    #             px = i
-    #             py = j
-    #         self.board[i][j] = self.EMPTY
-    #
-    #         if min_v <= alpha:
-    #             return (min_v, px, py)
-    #         if min_v < beta:
-    #             beta = min_v
-    #
-    #     return (min_v, px, py)
-
-    def max_alpha_beta(self, alpha, beta):
-        self.draw_board()
+    def max_alpha_beta(self, alpha, beta, board):
         maxv = -2
         px = None
         py = None
 
-        result = self.terminal(self.board)
+        result = self.terminal(board)
         if result is True:
-            winner_person = self.winner(self.board)
+            winner_person = self.winner(board)
             if winner_person == self.X:
                 return (1, 0, 0)
             elif winner_person == self.O:
@@ -232,22 +167,22 @@ class CaroGame:
 
         start = time.time()
 
-        for i in range(0, self.sizeMatrix):
-            for j in range(0, self.sizeMatrix):
+        for i in range(0, board.__len__()):
+            for j in range(0, board[i].__len__()):
                 if (time.time() - start) > self.time_limit:
                     break
-                if self.board[i][j] == EMPTY:
-                    self.board[i][j] = O
-                    (m, min_i, min_j) = self.min_alpha_beta(alpha, beta)
+                if board[i][j] == EMPTY:
+                    board[i][j] = O
+                    (m, min_i, min_j) = self.min_alpha_beta(alpha, beta, board)
                     if m == 1:
-                        self.board[i][j] = EMPTY
+                        board[i][j] = EMPTY
                         return (1, i, j)
 
                     if m > maxv:
                         maxv = m
                         px = i
                         py = j
-                    self.board[i][j] = EMPTY
+                    board[i][j] = EMPTY
 
                     if maxv >= beta:
                         return (maxv, px, py)
@@ -257,15 +192,15 @@ class CaroGame:
 
         return (maxv, px, py)
 
-    def min_alpha_beta(self, alpha, beta):
+    def min_alpha_beta(self, alpha, beta, board):
         minv = 2
 
         qx = None
         qy = None
 
-        result = self.terminal(self.board)
+        result = self.terminal(board)
         if result is True:
-            winner_person = self.winner(self.board)
+            winner_person = self.winner(board)
             if winner_person == self.X:
                 return (1, 0, 0)
             elif winner_person == self.O:
@@ -274,23 +209,23 @@ class CaroGame:
                 return (0, 0, 0)
         start = time.time()
 
-        for i in range(0, self.sizeMatrix):
-            for j in range(0, self.sizeMatrix):
+        for i in range(0, board.__len__()):
+            for j in range(0, board[i].__len__()):
                 if (time.time() - start) > self.time_limit:
                     break
 
-                if self.board[i][j] == EMPTY:
-                    self.board[i][j] = X
-                    (m, max_i, max_j) = self.max_alpha_beta(alpha, beta)
+                if board[i][j] == EMPTY:
+                    board[i][j] = X
+                    (m, max_i, max_j) = self.max_alpha_beta(alpha, beta, board)
                     if m == -1:
-                        self.board[i][j] = EMPTY
+                        board[i][j] = EMPTY
                         return (-1, i, j)
 
                     if m < minv:
                         minv = m
                         qx = i
                         qy = j
-                    self.board[i][j] = EMPTY
+                    board[i][j] = EMPTY
 
                     if minv <= alpha:
                         return (minv, qx, qy)
@@ -318,8 +253,8 @@ sessionPlay.board = [
 
 # print(sessionPlay.player(sessionPlay.board))
 
-(a,b ,c) = sessionPlay.min_alpha_beta(-2, 2)
-print("min value: ", a)
-print("next move: ", b,',',c)
+# (a, b, c) = sessionPlay.min_alpha_beta(-2, 2)
+# print("min value: ", a)
+# print("next move: ", b, ",", c)
 
 # print the true statement that in state have check distance time

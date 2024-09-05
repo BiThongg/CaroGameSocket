@@ -1,13 +1,15 @@
 import numpy as np
-from user import User
-from room import Room
-from game import Game
-from caro import Caro
+
 from flask_cors import CORS
 from datetime import datetime
 import uuid, json, random, string
 from flask import Flask, session, request
 from flask_socketio import SocketIO, emit, join_room, leave_room, send
+# import caro
+# from user import User
+# from room import Room
+# from game import Game
+# from caro import Caro
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = "secret!"
@@ -28,7 +30,7 @@ def serialization(data):
     return data.__dict__
 
 
-caro_game = Caro()
+# caro_game = Caro()
 
 #                   Caro
 #                    |
@@ -39,14 +41,15 @@ caro_game = Caro()
 # user event ------------------------------------------------------------------------
 
 
-@socketio.event
+@socketio.event("connect")
 def connect():
     user = User(id=request.sid, name=name_generation(5))
     caro_game.users[user.id] = user
     print(">> client {} connected to server".format(user.id))
+    print(caro_game.users)
 
 
-@socketio.event
+@socketio.event("disconnect")
 def disconnect():
     del caro_game.users[request.sid]
     print(">> client {} disconnected to server".format(request.sid))
@@ -91,7 +94,7 @@ def handle_get_test(payload):
             "room": {
                 "room_info": serialization(room),
                 "game_time": game.game_time,
-                "chess_board": json.dumps(game.chess_board.tolist()),
+                "chess_board": game.chess_board,
             },
         },
         to=request.sid,
@@ -111,7 +114,7 @@ def handle_fetch_rooms(payload):
         res.append(serialization(room))
     # send
     socketio.emit(
-        "room_list", {"code": 200, "message": "Room list", "rooms": res}, to=request.sid
+            "room_list", {"code": 200, "message": "Room list", "rooms": res , }, to=request.sid
     )
 
 
@@ -268,6 +271,12 @@ def handle_leave_room(payload):
         )
 
 
+@socketio.on("hehe")
+def handle_test(payload):
+    print(payload)
+    socketio.emit("test", {"code": 199, "message": "Test success"}, to=request.sid)
+
+
 # game event -----------------------------------------------------------------------------------------------------
 
 # @socketio.on('strike_out')
@@ -292,4 +301,4 @@ def handle_leave_room(payload):
 
 
 if __name__ == "__main__":
-    socketio.run(app, debug=True)
+    socketio.run(app, debug=False)
