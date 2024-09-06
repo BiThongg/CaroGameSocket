@@ -4,11 +4,10 @@ from src.player.PersonPlayer import PersonPlayer
 from src.player.AIPlayer import AIPlayer
 from src.User import User
 from src.util.point import Point
-from src.util.cell import Cell
 
 
-game = CasualGame()
-# game = TicTacToe()
+# game = CasualGame()
+game = TicTacToe()
 
 user = User("khoa")
 player = PersonPlayer(user)
@@ -24,20 +23,13 @@ game.randomSeed()
 
 # exit(0)
 while game.getWinner() is None:
-    symbol = game.getWinnerSymbol()
-    
-    if(symbol != Cell.NONE):
-        print("heheh")
-        break
-
-
     game.drawBoard()
     print("\n")
     if game.getCurrentTurn() == player:
         x, y = map(int, input("X, Y: ").split())
         player.move(Point(x, y))
     else:
-        bot.makeMove()
+        bot.makeMoveTictactoe()
 
 game.drawBoard()
 

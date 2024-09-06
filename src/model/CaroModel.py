@@ -6,7 +6,7 @@ class CaroModel:
     board = []
     start = time.time()
 
-    time_limit = 6
+    time_limit = 5
 
     def __init__(self):
         pass
@@ -63,7 +63,6 @@ class CaroModel:
         return True
 
     def winner(self, board):
-        # caro _sizex15, 5 for win
         _size = board.__len__()
 
         for i in range(_size):

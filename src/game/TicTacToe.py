@@ -13,52 +13,22 @@ class TicTacToe(Game):
     def getWinnerSymbol(self) -> Cell:
         # caro 3x3, 3 for win
         size = self.board.__len__()
-
+        # check win tictactoe 
         for i in range(size):
-            for j in range(size):
-                if self.board[i][j] != Cell.NONE:
-                    # check horizontal
-                    if j < size - 4:
-                        if (
-                            self.board[i][j]
-                            == self.board[i][j + 1]
-                            == self.board[i][j + 2]
-                            == self.board[i][j + 3]
-                            == self.board[i][j + 4]
-                        ):
-                            return self.board[i][j]
-                    # check vertical
-                    if i < size - 4:
-                        if (
-                            self.board[i][j]
-                            == self.board[i + 1][j]
-                            == self.board[i + 2][j]
-                            == self.board[i + 3][j]
-                            == self.board[i + 4][j]
-                        ):
-                            return self.board[i][j]
-                    # check diagonal
-                    if i < size - 4 and j < size - 4:
-                        if (
-                            self.board[i][j]
-                            == self.board[i + 1][j + 1]
-                            == self.board[i + 2][j + 2]
-                            == self.board[i + 3][j + 3]
-                            == self.board[i + 4][j + 4]
-                        ):
-                            return self.board[i][j]
-                    if i < size - 4 and j > 4:
-                        if (
-                            self.board[i][j]
-                            == self.board[i + 1][j - 1]
-                            == self.board[i + 2][j - 2]
-                            == self.board[i + 3][j - 3]
-                            == self.board[i + 4][j - 4]
-                        ):
-                            return self.board[i][j]
-
-                    return Cell.NONE
+            # check horizontal
+            if self.board[i][0] == self.board[i][1] == self.board[i][2] != Cell.NONE:
+                return self.board[i][0]
+            # check vertical
+            if self.board[0][i] == self.board[1][i] == self.board[2][i] != Cell.NONE:
+                return self.board[0][i]
+        # check diagonal
+        if self.board[0][0] == self.board[1][1] == self.board[2][2] != Cell.NONE:
+            return self.board[0][0]
+        if self.board[0][2] == self.board[1][1] == self.board[2][0] != Cell.NONE:
+            return self.board[0][2]
         return Cell.NONE
+
+        
 
     def getWinner(self) -> Player | None:
         symbol = self.getWinnerSymbol()
