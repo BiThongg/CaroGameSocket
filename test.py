@@ -37,3 +37,18 @@ if game.getWinner().user:
     print(game.getWinner().user.name + " wins")
 else:
     print("Bot wins")
+
+# x, y = map(int, input("X, Y: ").split())
+# player.move(Point(x, y))
+# game.drawBoard()
+# print("\n")
+# bot.makeMoveTictactoe()
+# game.drawBoard()
+# x, y = map(int, input("X, Y: ").split())
+# player.move(Point(x, y))
+# game.drawBoard()
+# print("\n")
+# bot.makeMoveTictactoe()
+# game.drawBoard()
+#
+#
