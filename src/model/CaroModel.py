@@ -6,7 +6,7 @@ class CaroModel:
     board = []
     start = time.time()
 
-    time_limit = 1
+    time_limit = 6
 
     def __init__(self):
         pass
@@ -149,7 +149,7 @@ class CaroModel:
         for i in range(0, board.__len__()):
             for j in range(0, board[i].__len__()):
                 if (time.time() - start) > self.time_limit:
-                    break
+                    return (maxv, px, py)
                 if board[i][j] == Cell.NONE:
                     board[i][j] = Cell.O
                     (m, min_i, min_j) = self.min_alpha_beta(alpha, beta, board)
@@ -191,7 +191,7 @@ class CaroModel:
         for i in range(0, board.__len__()):
             for j in range(0, board[i].__len__()):
                 if (time.time() - start) > self.time_limit:
-                    break
+                    return (minv, qx, qy)
 
                 if board[i][j] == Cell.NONE:
                     board[i][j] = Cell.X

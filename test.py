@@ -24,6 +24,13 @@ game.randomSeed()
 
 # exit(0)
 while game.getWinner() is None:
+    symbol = game.getWinnerSymbol()
+    
+    if(symbol != Cell.NONE):
+        print("heheh")
+        break
+
+
     game.drawBoard()
     print("\n")
     if game.getCurrentTurn() == player:
