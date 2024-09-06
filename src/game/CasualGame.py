@@ -10,7 +10,7 @@ class CasualGame(Game):
     def __init__(self, size: int = 15):
         super().__init__(size)
 
-    def getWinnerSymbol(self) -> Cell:
+    def getWinnerSymbol(self) -> Cell | None:
         # caro _sizex15, 5 for win
         size = self.board.__len__()
 
@@ -56,9 +56,7 @@ class CasualGame(Game):
                             == self.board[i + 4][j - 4]
                         ):
                             return self.board[i][j]
-
-                    return Cell.NONE
-        return Cell.NONE
+        return None
 
     def getWinner(self) -> Player | None:
         symbol = self.getWinnerSymbol()
