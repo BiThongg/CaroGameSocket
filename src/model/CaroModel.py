@@ -46,8 +46,6 @@ class CaroModel:
                 elif board[j][i] == Cell.O:
                     o_count += 1
 
-        print(x_count, o_count)
-
         if x_count > o_count:
             return Cell.O
         else:

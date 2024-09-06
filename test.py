@@ -38,3 +38,10 @@ while game.getWinner() is None:
         player.move(Point(x, y))
     else:
         bot.makeMove()
+
+game.drawBoard()
+
+if game.getWinner().user:
+    print(game.getWinner().user.name + " wins")
+else:
+    print("Bot wins")
