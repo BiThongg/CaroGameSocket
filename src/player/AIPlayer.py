@@ -12,7 +12,7 @@ class AIPlayer(Player):
         self.tictactoeModel = TictactoeModel()
         return
 
-    def makeMove(self):
+    def makeMoveSumoku(self):
         if self.symbol == Cell.X:
             (_, y, x) = self.caroModel.min_alpha_beta(-2, 2, self.game.board)
             super().move(Point(x, y))
