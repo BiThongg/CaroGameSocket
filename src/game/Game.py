@@ -4,8 +4,6 @@ from abc import ABC, abstractmethod
 from src.util.cell import Cell
 from src.util.point import Point
 from typing import List
-import random
-import pandas as pd
 from rich.console import Console
 from rich.table import Table
 
@@ -57,14 +55,7 @@ class Game(ABC):
         return False
 
     def drawBoard(self) -> None:
-        # prefix base on the size of number "i"
         table = Table(title="GAME SIEU DINH")
-        # rows = [
-        #     ["John", "Doe", "45"],
-        #     ["Jane", "Doe", "32"],
-        #     ["Mary", "Smith", "25"],
-        # ]
-        # Map Cell.value in the board like the rows above
         rows = []
         for i, row in enumerate(self.board):
             s = list(map(lambda x: " " if x == Cell.NONE else x.value, row))
@@ -82,12 +73,6 @@ class Game(ABC):
 
         console = Console()
         console.print(table)
-
-        # prefixSpace = " " * len(str(len(self.board)))
-        # print(prefixSpace + "  " + "   ".join(map(str, range(len(self.board[0])))))
-        # for i, row in enumerate(self.board):
-        #     s = map(lambda x: " " if x == Cell.NONE else x.value, row)
-        #     print(str(i) + " | " + " | ".join(s) + " |")
         return
 
     @abstractmethod
