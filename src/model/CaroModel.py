@@ -6,7 +6,7 @@ class CaroModel:
     board = []
     start = time.time()
 
-    time_limit = 5
+    time_limit = 3
 
     def __init__(self):
         pass
@@ -143,28 +143,27 @@ class CaroModel:
 
         start = time.time()
 
-        for i in range(0, board.__len__()):
-            for j in range(0, board[i].__len__()):
-                if (time.time() - start) > self.time_limit:
-                    return (maxv, px, py)
-                if board[i][j] == Cell.NONE:
-                    board[i][j] = Cell.O
-                    (m, min_i, min_j) = self.min_alpha_beta(alpha, beta, board)
-                    if m == 1:
-                        board[i][j] = Cell.NONE
-                        return (1, i, j)
+        for action in self.actions(board):
+            (i, j) = action
+            if (time.time() - start) > self.time_limit:
+                return (maxv, px, py)
+            board[i][j] = Cell.X
+            (m, min_i, min_j) = self.min_alpha_beta(alpha, beta, board)
+            if m == 1:
+                board[i][j] = Cell.NONE
+                return (1, i, j)
 
-                    if m > maxv:
-                        maxv = m
-                        px = i
-                        py = j
-                    board[i][j] = Cell.NONE
+            if m > maxv:
+                maxv = m
+                px = i
+                py = j
+            board[i][j] = Cell.NONE
 
-                    if maxv >= beta:
-                        return (maxv, px, py)
+            if maxv >= beta:
+                return (maxv, px, py)
 
-                    if maxv > alpha:
-                        alpha = maxv
+            if maxv > alpha:
+                alpha = maxv
 
         return (maxv, px, py)
 
@@ -191,7 +190,7 @@ class CaroModel:
                     return (minv, qx, qy)
 
                 if board[i][j] == Cell.NONE:
-                    board[i][j] = Cell.X
+                    board[i][j] = Cell.O
                     (m, max_i, max_j) = self.max_alpha_beta(alpha, beta, board)
                     if m == -1:
                         board[i][j] = Cell.NONE

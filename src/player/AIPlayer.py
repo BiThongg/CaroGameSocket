@@ -14,20 +14,20 @@ class AIPlayer(Player):
 
     def makeMoveSumoku(self):
         if self.symbol == Cell.X:
-            (_, y, x) = self.caroModel.min_alpha_beta(-2, 2, self.game.board)
+            (a, y, x) = self.caroModel.max_alpha_beta(-2, 2, self.game.board)
             super().move(Point(x, y))
-            print("AI move: ", x, y)
+            print("AI move: ", a, x, y)
         else:
-            (_, y, x) = self.caroModel.max_alpha_beta(-2, 2, self.game.board)
+            (a, y, x) = self.caroModel.min_alpha_beta(-2, 2, self.game.board)
             super().move(Point(x, y))
-            print("AI move: ", x, y)
+            print("AI move: ", a, x, y)
 
     def makeMoveTictactoe(self):
         if self.symbol == Cell.X:
-            (a, y, x) = self.tictactoeModel.max_alpha_beta(-1, 2, self.game.board)
+            (a, y, x) = self.tictactoeModel.max_alpha_beta(-2, 2, self.game.board)
             print("AI move: ", a, x, y)
             super().move(Point(x, y))
-            print (self.game.board)
+            print(self.game.board)
         else:
             (a, y, x) = self.tictactoeModel.min_alpha_beta(-2, 2, self.game.board)
             print("AI move: ", a, x, y)

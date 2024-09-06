@@ -7,7 +7,7 @@ from src.util.point import Point
 
 
 # game = CasualGame()
-game = TicTacToe()
+game = CasualGame()
 
 user = User("khoa")
 player = PersonPlayer(user)
@@ -29,7 +29,7 @@ while game.getWinner() is None:
         x, y = map(int, input("X, Y: ").split())
         player.move(Point(x, y))
     else:
-        bot.makeMoveTictactoe()
+        bot.makeMoveSumoku()
 
 game.drawBoard()
 
