@@ -1,11 +1,12 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 from abc import ABC, abstractmethod
-from src.util.cell import Cell
-from src.util.point import Point
+from util.point import Point
 from typing import List
 from rich.console import Console
 from rich.table import Table
+
+from util.cell import Cell
 
 
 if TYPE_CHECKING:

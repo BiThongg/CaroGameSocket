@@ -1,4 +1,3 @@
-import jsonpickle
 import numpy as np
 
 from flask_cors import CORS
@@ -7,8 +6,8 @@ import uuid, json, random, string
 from flask import Flask, session, request
 from flask_socketio import SocketIO, emit, join_room, leave_room, send
 
-from src.util.storage import Storage
-from src.room.user import User
+from User import User
+from util.storage import Storage
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = "secret!"
@@ -44,21 +43,32 @@ storage = Storage()
 
 
 @socketio.event("connect")
-def connect():
+def connect(auth):
     requestId = request.sid
     user = User(id=requestId, name=name_generation(5))
-
     storage.users[requestId] = user
+
     socketio.emit(
         "connect",
         {
             "code": 200,
             "message": "Connected to server",
-            "user": jsonpickle.encode(user),
+            "user": serialization(user),
         },
         to=requestId,
     )
-    print(">> client {} connected to server".format(requestId))
+
+    emit(
+        "connect",
+        {
+            "code": 200,
+            "message": "Connected to server",
+            # "user": serialization(user),
+        },
+    )
+
+    # print(user)
+    # print(">> client {} connected to server".format(requestId))
 
 
 @socketio.event("disconnect")
@@ -121,7 +131,6 @@ def register(payload):
         "register",
         {
             "code": 200,
-            "message": "Register success",
             "user": serialization(user),
         },
         to=requestId,
@@ -129,6 +138,19 @@ def register(payload):
 
 
 # room event ------------------------------------------------------------------------
+
+
+@socketio.on("create_room")
+def create_room(payload):
+    requestId = request.sid
+    room = storage.create_room(payload["name"], requestId)
+
+
+@socketio.on("add_bot")
+def add_bot(payload):
+    requestId = request.sid
+    room = storage.rooms.get(payload["roomId"])
+    room.addAIPlayer(requestId)
 
 
 # @socketio.on("get_test")

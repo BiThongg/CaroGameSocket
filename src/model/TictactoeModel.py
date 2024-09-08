@@ -1,6 +1,6 @@
 from typing import List
 
-from src.util.cell import Cell
+from util.cell import Cell
 
 
 class TictactoeModel:
@@ -9,16 +9,32 @@ class TictactoeModel:
 
     def checkWinner(self, board: List[List[Cell]]):
         for i in range(3):
-            if board[i][0] == board[i][1] and board[i][1] == board[i][2] and board[i][0] != Cell.NONE:
+            if (
+                board[i][0] == board[i][1]
+                and board[i][1] == board[i][2]
+                and board[i][0] != Cell.NONE
+            ):
                 return board[i][0]
 
-            if board[0][i] == board[1][i] and board[1][i] == board[2][i] and board[0][i] != Cell.NONE:
+            if (
+                board[0][i] == board[1][i]
+                and board[1][i] == board[2][i]
+                and board[0][i] != Cell.NONE
+            ):
                 return board[0][i]
 
-        if board[0][0] == board[1][1] and board[1][1] == board[2][2] and board[0][0] != Cell.NONE:
+        if (
+            board[0][0] == board[1][1]
+            and board[1][1] == board[2][2]
+            and board[0][0] != Cell.NONE
+        ):
             return board[0][0]
 
-        if board[0][2] == board[1][1] and board[1][1] == board[2][0] and board[0][2] != Cell.NONE:
+        if (
+            board[0][2] == board[1][1]
+            and board[1][1] == board[2][0]
+            and board[0][2] != Cell.NONE
+        ):
             return board[0][2]
 
         return None
@@ -74,6 +90,7 @@ class TictactoeModel:
         for action in self.actions(board):
             (i, j) = action
             board[i][j] = Cell.O
+
             (m, max_i, max_j) = self.max_alpha_beta(alpha, beta, board)
             if m == -1:
                 board[i][j] = Cell.NONE
@@ -118,8 +135,8 @@ class TictactoeModel:
 
         for action in self.actions(board):
             (i, j) = action
-            print(i, j)
             board[i][j] = Cell.X
+
             (m, min_i, min_j) = self.min_alpha_beta(alpha, beta, board)
             if m == 1:
                 board[i][j] = Cell.NONE
