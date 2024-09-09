@@ -113,19 +113,18 @@ def joinRoom(payload):
         socketio.emit("join_room_failed", {
             "message": "Some error happend please try again !"
         }, to=request.sid)
-    else:
-        # if avalable
-        room.addCompetitor(user)
+    # if avalable
+    room.addCompetitor(user)
 
-        # save
-        storage.rooms[room.id] = room
+    # save
+    storage.rooms[room.id] = room
 
-        # response
-        socketio.emit("joined_room", {
-            "message": "Joined room",
-            "room": serialization(room)
-            }, to=[room.participantIds()],
-        )
+    # response
+    socketio.emit("joined_room", {
+        "message": "Joined room",
+        "room": serialization(room)
+        }, to=[room.participantIds()],
+    )
 
 @socketio.on("on_kick") # handle for competitor
 def onKick(payload):
@@ -192,6 +191,31 @@ def changeStatus(payload):
     socketio.emit("status_changed", {
             "room": serialization(room)
         }, to=[room.participantIds()],
+    )
+
+@socketio.on("leave_room") # handle for competitor
+def leaveRoom(payload):
+    # find
+    user = storage.users.get(request.sid)
+    room = storage.rooms.get(payload["room_id"])
+
+    # validate
+    if room is None:
+        socketio.emit("leave_room_failed", {
+            "message": "Some error happend please try again !"
+        }, to=request.sid)
+
+    # if avalable
+    room.onLeave(user.id)
+
+    # save
+    storage.rooms[room.id] = room
+
+    # response
+    socketio.emit("leaved_room", {
+        "message": "leaved room",
+        "room": serialization(room)
+        }, to=[room.participantIds(), request.sid],
     )
 
 # @socketio.on("get_test")

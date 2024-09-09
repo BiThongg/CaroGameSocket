@@ -71,10 +71,10 @@ class Room:
         return self.owner
 
     def onLeave(self, userId: str) -> None:
-        if userId == self.owner.id:
+        if userId == self.owner.info.id:
             self.owner = self.competitor
             self.competitor = None
-        elif userId == self.competitor.id:
+        elif userId == self.competitor.info.id:
             self.competitor = None
         else:
             userTmp = None
