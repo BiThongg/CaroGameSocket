@@ -1,9 +1,9 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 from abc import ABC, abstractmethod
-from src.util.point import Point
-from src.util.cell import Cell
-from src.User import User
+from util.point import Point
+from util.cell import Cell
+from User import User
 
 if TYPE_CHECKING:
     from src.game.Game import Game

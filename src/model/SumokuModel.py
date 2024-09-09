@@ -1,12 +1,12 @@
 import time
-from src.util.cell import Cell
+from util.cell import Cell
 
 
 class CaroModel:
     board = []
     start = time.time()
 
-    time_limit = 3
+    time_limit = 6
 
     def __init__(self):
         pass
@@ -39,8 +39,8 @@ class CaroModel:
         x_count = 0
         o_count = 0
 
-        for i in range(self.sizeMatrix):
-            for j in range(self.sizeMatrix):
+        for i in range(board.__len__()):
+            for j in range(board[i].__len__()):
                 if board[j][i] == Cell.X:
                     x_count += 1
                 elif board[j][i] == Cell.O:
@@ -184,28 +184,28 @@ class CaroModel:
                 return (0, 0, 0)
         start = time.time()
 
-        for i in range(0, board.__len__()):
-            for j in range(0, board[i].__len__()):
-                if (time.time() - start) > self.time_limit:
+        for action in self.actions(board):
+            (i, j) = action
+            if (time.time() - start) > self.time_limit:
+                return (minv, qx, qy)
+
+            if board[i][j] == Cell.NONE:
+                board[i][j] = Cell.O
+                (m, max_i, max_j) = self.max_alpha_beta(alpha, beta, board)
+                if m == -1:
+                    board[i][j] = Cell.NONE
+                    return (-1, i, j)
+
+                if m < minv:
+                    minv = m
+                    qx = i
+                    qy = j
+                board[i][j] = Cell.NONE
+
+                if minv <= alpha:
                     return (minv, qx, qy)
 
-                if board[i][j] == Cell.NONE:
-                    board[i][j] = Cell.O
-                    (m, max_i, max_j) = self.max_alpha_beta(alpha, beta, board)
-                    if m == -1:
-                        board[i][j] = Cell.NONE
-                        return (-1, i, j)
-
-                    if m < minv:
-                        minv = m
-                        qx = i
-                        qy = j
-                    board[i][j] = Cell.NONE
-
-                    if minv <= alpha:
-                        return (minv, qx, qy)
-
-                    if minv < beta:
-                        beta = minv
+                if minv < beta:
+                    beta = minv
 
         return (minv, qx, qy)

@@ -1,13 +1,14 @@
-from src.model.TictactoeModel import TictactoeModel
-from src.model.CaroModel import CaroModel
-from src.player.Player import Player
-from src.util.point import Point
-from src.util.cell import Cell
+from User import User
+from model.TictactoeModel import TictactoeModel
+from model.SumokuModel import CaroModel
+from player.Player import Player
+from util.point import Point
+from util.cell import Cell
 
 
 class AIPlayer(Player):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, user: User | None):
+        super().__init__(user)
         self.caroModel = CaroModel()
         self.tictactoeModel = TictactoeModel()
         return
