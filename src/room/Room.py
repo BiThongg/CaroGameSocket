@@ -10,14 +10,24 @@ from User import User
 from player.AIPlayer import AIPlayer
 from player.PersonPlayer import PersonPlayer
 from player.Player import Player
+from enum import Enum
 
+class Status(Enum): # use enum i cant serialize
+    WAITING = "WAITING"
+    READY = "READY"
+
+class Participant: 
+    def __init__(self, user: User):
+        self.info: User = user
+        self.status: bool = False
 
 class Room:
     def __init__(self, name, owner: User):
         self.id: str = str(uuid.uuid4())
         self.name: str = name
-        self.competitor: User
-        self.owner: User = owner
+        self.competitor: Participant = None
+        self.owner: Participant = Participant(owner)
+        
         self.guests: List[User] = []
         self.game: Game
 
@@ -38,8 +48,10 @@ class Room:
     def addGuest(self, user: User):
         self.guests.append(user)
 
-    def addCompetitor(self, user: User):
-        self.competitor = user
+    def addCompetitor(self, user: User):            
+        self.competitor = Participant(user)
+        if user.id.startswith("BOT_"):
+            self.competitor.status = True
 
     def addGame(self, game: Game):
         self.game = game
@@ -79,3 +91,22 @@ class Room:
 
     def onDispose(self) -> None:
         pass
+
+    def isFull(self) -> bool:
+        return self.competitor is not None and self.owner is not None # and len(self.guests) >= 5
+    
+    def canAction(self, owner) -> bool:
+        return owner.id == self.owner.id
+
+    def isReady(self) -> bool:
+        return self.competitor.status == Status.READY and self.owner.status == Status.READY 
+
+    def changeStatus(self, userId: str):
+        participant: Participant = self.owner if self.owner.info.id == userId else self.competitor
+        participant.status = False if participant.status == True else True
+
+    def participantIds(self):
+        ids = [watcher.id for watcher in self.guests]
+        ids.append(self.owner.info.id)
+        if self.competitor is not None:
+            ids.append(self.competitor.info.id)
