@@ -33,10 +33,10 @@ class Room:
 
     def kick(self, userId: str):
         requestId = request.sid
-        if requestId != self.owner.id:
+        if requestId != self.owner.info.id:
             raise Exception("You are not the owner")
 
-        if self.competitor is not None and self.competitor.id == userId:
+        if self.competitor is not None and self.competitor.info.id == userId:
             self.competitor = None
 
         else:

@@ -135,7 +135,7 @@ def onKick(payload):
     guest = storage.users.get(payload['guest_id'])
 
     # action
-    room.kick(payload['user_id'])
+    room.kick(payload['guest_id'])
 
     # save
     storage.rooms[room.id] = room
@@ -144,7 +144,7 @@ def onKick(payload):
     socketio.emit("kicked", {
         "message": "User was kicked",
         "room": serialization(room)
-        }, to=[room.owner.info.id, guest['user_id'], *[watcher.id for watcher in room.guests]],
+        }, to=[room.participantIds()],
     )
 
 @socketio.on("add_bot")
@@ -168,7 +168,7 @@ def add_bot(payload):
     socketio.emit("added_bot", {
         "message": "bot added into room",
         "room": serialization(room)
-        }, to=[room.participantIds()],
+        }, to=[room.participantIds(), payload['guest_id']],
     )
 
 @socketio.on('change_status')
