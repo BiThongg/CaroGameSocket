@@ -5,13 +5,11 @@ from util.point import Point
 from typing import List
 from rich.console import Console
 from rich.table import Table
-
+from enum import Enum
 from util.cell import Cell
-
 
 if TYPE_CHECKING:
     from src.player.Player import Player
-
 
 class Game(ABC):
     def __init__(self, size: int):
@@ -40,10 +38,9 @@ class Game(ABC):
         self.updateTurn()
         return
 
-    def addPlayer(self, player: Player) -> None:
+    def addPlayer(self: Game, player: Player) -> None:
         player.game = self
         self.players.append(player)
-        return
 
     def removePlayer(self, player: Player) -> None:
         player.game = None
@@ -75,6 +72,9 @@ class Game(ABC):
         console = Console()
         console.print(table)
         return
+    
+    def serialization(self):
+        tmp = self
 
     @abstractmethod
     def getWinner(self) -> Player:

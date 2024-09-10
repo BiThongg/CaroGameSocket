@@ -6,11 +6,12 @@ import uuid, json, random, string
 from flask import Flask, session, request
 from flask_socketio import SocketIO, emit, join_room, leave_room, send
 import math
+from enum import Enum
 import jsonpickle
 
 from User import User
 from util.storage import Storage
-
+from util.serializeFilter import serializationFilter
 app = Flask(__name__)
 app.config["SECRET_KEY"] = "secret!"
 CORS(app, resources={r"/*": {"origins": "*"}})
@@ -27,11 +28,17 @@ def name_generation(length):
     random_string = "".join(random.choices(characters, k=length))
     return random_string
 
-def serialization(obj):
-    if isinstance(obj, dict):  
-        return {k: serialization(v) for k, v in obj.items()}
+def serialization(obj): 
+    if isinstance(obj, Enum):
+        return obj.name
+    elif isinstance(obj, dict):  
+        return {
+                k: serialization(v) for k, v in obj.items()
+            }
     elif hasattr(obj, "__dict__"): 
-        return {k: serialization(v) for k, v in vars(obj).items()}
+        return {
+                k: serialization(v) for k, v in vars(obj).items()
+            }
     elif isinstance(obj, list): 
         return [serialization(i) for i in obj]
     else:
@@ -81,7 +88,7 @@ def handle_fetch_rooms(payload):
     # pagination
     idxfrom = (payload["page"] - 1) * payload["size"]
     roomList = rooms[idxfrom : idxfrom + payload["size"] + 1]
-    res = sorted(roomList, key=lambda rm: rm.isFull(), reverse=True) 
+    res = sorted(roomList, key=lambda rm: rm.isFull(), reverse=True)
     res = res[:payload['size']]
 
     # send
@@ -216,6 +223,33 @@ def leaveRoom(payload):
         "message": "leaved room",
         "room": serialization(room)
         }, to=[room.participantIds(), request.sid],
+    )
+
+@socketio.on("start_game")
+def startGame(payload):
+    # find
+    user = storage.users.get(request.sid)
+    room = storage.rooms.get(payload["room_id"])
+
+    # validate 
+    if user.id != room.owner.info.id or room.isReady() == False:
+        socketio.emit("start_game_failed", {
+            "message": "Some error happend please try again !"
+        }, to=request.sid)
+
+    # if avalable
+    room.gameStart()
+
+    # save
+    storage.rooms[room.id] = room
+    for item in list(room.game.players[:]):
+        item.game = '__HIDE__'
+
+    # response
+    socketio.emit("started_game", {
+        "message": "Game start !!! Come on",
+        "game": serializationFilter(room.game, ['game'])
+        }, to=[room.participantIds()],
     )
 
 # @socketio.on("get_test")
@@ -449,4 +483,7 @@ def leaveRoom(payload):
 #
 #
 if __name__ == "__main__":
-    socketio.run(app, debug=False)
+    try:
+        socketio.run(app, debug=False)
+    except Exception as e:
+        print(f"Caught a global exception: {e}")

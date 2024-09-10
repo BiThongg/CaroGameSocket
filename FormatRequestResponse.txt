@@ -1,0 +1,198 @@
+# Create Room
+{ 
+    "room_name": "Xin chao 500 ace"
+},
+{
+    "room": {
+        "id": "c1cdb11a-0c15-4bc5-8ad1-97dd0f67aa13",
+        "name": "Xin chao 500 ace",
+        "competitor": null,
+        "owner": {
+            "info": {
+                "name": "tqhfg",
+                "id": "nwc4coqZ6t-EemR4AAAB"
+            },
+            "status": "NOT_READY"
+        },
+        "guests": []
+    }
+}
+
+
+
+
+
+# Join Room
+{ 
+    "room_id": "c1cdb11a-0c15-4bc5-8ad1-97dd0f67aa13"
+},
+{
+    "message": "Joined room",
+    "room": {
+        "id": "c1cdb11a-0c15-4bc5-8ad1-97dd0f67aa13",
+        "name": "Xin chao 500 ace",
+        "competitor": {
+            "info": {
+                "name": "JhPWG",
+                "id": "wZQxdS7kItS_SmVGAAAD"
+            },
+            "status": "NOT_READY"
+        },
+        "owner": {
+            "info": {
+                "name": "tqhfg",
+                "id": "nwc4coqZ6t-EemR4AAAB"
+            },
+            "status": "NOT_READY"
+        },
+        "guests": []
+    }
+}
+
+
+
+
+
+# Kick
+{
+    "room_id": "c1cdb11a-0c15-4bc5-8ad1-97dd0f67aa13",
+    "guest_id": "wZQxdS7kItS_SmVGAAAD",
+},
+{
+    "message": "User was kicked",
+    "room": {
+        "id": "c1cdb11a-0c15-4bc5-8ad1-97dd0f67aa13",
+        "name": "Xin chao 500 ace",
+        "competitor": null,
+        "owner": {
+            "info": {
+                "name": "tqhfg",
+                "id": "nwc4coqZ6t-EemR4AAAB"
+            },
+            "status": "NOT_READY"
+        },
+        "guests": []
+    }
+}
+
+
+
+
+
+
+# Change Status
+{
+    "room_id": "c1cdb11a-0c15-4bc5-8ad1-97dd0f67aa13",
+},
+{
+    "room": {
+        "id": "c1cdb11a-0c15-4bc5-8ad1-97dd0f67aa13",
+        "name": "Xin chao 500 ace",
+        "competitor": null,
+        "owner": {
+            "info": {
+                "name": "tqhfg",
+                "id": "nwc4coqZ6t-EemR4AAAB"
+            },
+            "status": "READY"
+        },
+        "guests": []
+    }
+}
+
+
+
+
+
+# Add Bot
+{
+    "room_id": "c1cdb11a-0c15-4bc5-8ad1-97dd0f67aa13",
+}, 
+{
+    "message": "bot added into room",
+    "room": {
+        "id": "c1cdb11a-0c15-4bc5-8ad1-97dd0f67aa13",
+        "name": "Xin chao 500 ace",
+        "competitor": {
+            "info": {
+                "name": "BOT",
+                "id": "BOT_c9b7e2f4-5bb4-401f-9f27-7c0e03b79c75"
+            },
+            "status": "READY"
+        },
+        "owner": {
+            "info": {
+                "name": "tqhfg",
+                "id": "nwc4coqZ6t-EemR4AAAB"
+            },
+            "status": "NOT_READY"
+        },
+        "guests": []
+    }
+}
+
+
+
+
+
+
+# Leave Room 
+{
+    "room_id": "c1cdb11a-0c15-4bc5-8ad1-97dd0f67aa13",
+},
+{
+    "message": "leaved room",
+    "room": {
+        "id": "c1cdb11a-0c15-4bc5-8ad1-97dd0f67aa13",
+        "name": "Xin chao 500 ace",
+        "competitor": null,
+        "owner": {
+            "info": {
+                "name": "BOT",
+                "id": "BOT_c9b7e2f4-5bb4-401f-9f27-7c0e03b79c75"
+            },
+            "status": "READY"
+        },
+        "guests": []
+    }
+},
+
+
+# Room List
+{
+    "page": 1,
+    "size": 5
+},
+{
+    "page": 1,
+    "size": 2,
+    "total_page": 3,
+    "rooms": [
+        {
+            "id": "c1cdb11a-0c15-4bc5-8ad1-97dd0f67aa13",
+            "name": "Xin chao 500 ace",
+            "competitor": null,
+            "owner": {
+                "info": {
+                    "name": "BOT",
+                    "id": "BOT_c9b7e2f4-5bb4-401f-9f27-7c0e03b79c75"
+                },
+                "status": "READY"
+            },
+            "guests": []
+        },
+        {
+            "id": "478a212f-3758-46f1-b32a-d02ecde875ff",
+            "name": "Xin chao 500 ace",
+            "competitor": null,
+            "owner": {
+                "info": {
+                    "name": "tqhfg",
+                    "id": "nwc4coqZ6t-EemR4AAAB"
+                },
+                "status": "NOT_READY"
+            },
+            "guests": []
+        }
+    ]
+}
