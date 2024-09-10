@@ -6,7 +6,6 @@ from random import randint
 
 # Casual game is who get 5 in a row will win
 class CasualGame(Game):
-
     def __init__(self, size: int = 5):
         super().__init__(size)
 

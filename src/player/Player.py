@@ -10,7 +10,6 @@ if TYPE_CHECKING:
 
 
 class Player(ABC):
-
     def __init__(self, user: User | None = None):
         self.game: Game = None
         self.symbol: Cell = Cell.NONE
