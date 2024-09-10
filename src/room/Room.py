@@ -48,20 +48,22 @@ class Room:
     def addGuest(self, user: User):
         self.guests.append(user)
 
-    def addCompetitor(self, user: User):            
+    def addCompetitor(self, user: User | None):            
+        if user is None:
+            raise Exception("User is None")
         self.competitor = Participant(user)
         if user.id.startswith("BOT_"):
             self.competitor.status = True
 
     def addGame(self, game: Game):
         self.game = game
-        player1: Player = PersonPlayer(self.owner)
+        player1: Player = PersonPlayer(self.owner.info)
         player2: Player 
 
-        if(self.competitor.id == "bot"): 
-            player2 = AIPlayer(self.competitor)
+        if(self.competitor.info.id == "bot"): 
+            player2 = AIPlayer(self.competitor.info)
         else: 
-            player2 = PersonPlayer(self.competitor)
+            player2 = PersonPlayer(self.competitor.info)
         
         self.game.addPlayer(player1)
         self.game.addPlayer(player2)

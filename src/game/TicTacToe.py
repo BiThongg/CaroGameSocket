@@ -1,6 +1,6 @@
-from src.game.Game import Game
-from src.player.Player import Player
-from src.util.cell import Cell
+from game.Game import Game
+from player.Player import Player
+from util.cell import Cell
 from random import randint
 
 

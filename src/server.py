@@ -71,6 +71,15 @@ def register(payload):
         }, to=userId,
     )
 
+
+@socketio.on("get_users")
+def getUser(payload):
+    userId = request.sid
+    users = list(storage.users.values())
+    socketio.emit("list_of_user", {
+            "users": serialization(users),
+        }, to=userId,
+    )
 # room event ------------------------------------------------------------------------
 
 @socketio.on("room_list")
@@ -105,7 +114,7 @@ def createRoom(payload):
 @socketio.on("join_room") # handle for competitor
 def joinRoom(payload):
     # find
-    user = storage.users.get(request.sid)
+    user:User = storage.users.get(request.sid)
     room = storage.rooms.get(payload["room_id"])
 
     # validate

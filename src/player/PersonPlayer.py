@@ -1,5 +1,5 @@
-from src.player.Player import Player
-from src.User import User
+from player.Player import Player
+from User import User
 
 
 class PersonPlayer(Player):
