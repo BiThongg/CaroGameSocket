@@ -5,13 +5,11 @@ from util.point import Point
 from typing import List
 from rich.console import Console
 from rich.table import Table
-
+from enum import Enum
 from util.cell import Cell
-
 
 if TYPE_CHECKING:
     from src.player.Player import Player
-
 
 class Game(ABC):
     def __init__(self, size: int):
@@ -30,20 +28,22 @@ class Game(ABC):
                 return player
 
     def handleMove(self, player: Player, point: Point) -> None:
-        if self.turn != player.symbol:
-            raise Exception("Not your turn")
-
-        if self.board[point.y][point.x] != Cell.NONE:
-            raise Exception("Cell is not empty")
-
-        self.board[point.y][point.x] = player.symbol
-        self.updateTurn()
+        print("handleMove")
+        print(player)
+        print(point)
+        # if self.turn != player.symbol:
+        #     raise Exception("Not your turn")
+        #
+        # if self.board[point.y][point.x] != Cell.NONE:
+        #     raise Exception("Cell is not empty")
+        #
+        # self.board[point.y][point.x] = player.symbol
+        # self.updateTurn()
         return
 
-    def addPlayer(self, player: Player) -> None:
+    def addPlayer(self: Game, player: Player) -> None:
         player.game = self
         self.players.append(player)
-        return
 
     def removePlayer(self, player: Player) -> None:
         player.game = None
@@ -75,6 +75,9 @@ class Game(ABC):
         console = Console()
         console.print(table)
         return
+    
+    def serialization(self):
+        tmp = self
 
     @abstractmethod
     def getWinner(self) -> Player:
