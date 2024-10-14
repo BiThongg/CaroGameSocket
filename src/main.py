@@ -3,7 +3,7 @@ import numpy as np
 from flask_cors import CORS
 from datetime import datetime
 import uuid, json, random, string
-from flask import Flask, session, request
+from flask import Flask, session, request, make_response
 from flask_socketio import SocketIO, emit, join_room, leave_room, send
 import math
 from enum import Enum
@@ -16,94 +16,69 @@ from player.PersonPlayer import PersonPlayer
 from player.Player import Player
 from room.Room import Room
 from util.point import Point
-from util.storage import Storage
 from util.serializeFilter import serializationFilter
+from util.serialize import serialization
+from util.nameGeneration import name_generation
+from database.data import storage
+from auth.authentication import decode_jwt, encode_jwt, authentication_required
 
 app = Flask(__name__)
-app.config["SECRET_KEY"] = "secret!"
+app.config["SECRET_KEY"] = "CARO_GAME_SUPER_VIP_PRO_MAX"
 CORS(app, resources={r"/*": {"origins": "*"}})
-
-# >                                      -----------DOCS-----------                                      <
-
-# bot format: {name: "BOT", id: "BOT_uuid"}
-# event naming convention: request is A_B, response is past tense of A_B, Exception or Error response is A_B_failed
-
 socketio = SocketIO(app, cors_allowed_origins="*")
-
-
-def name_generation(length):
-    characters = string.ascii_letters
-    random_string = "".join(random.choices(characters, k=length))
-    return random_string
-
-
-def serialization(obj):
-    if isinstance(obj, Enum):
-        return obj.name
-    elif isinstance(obj, dict):
-        return {k: serialization(v) for k, v in obj.items()}
-    elif hasattr(obj, "__dict__"):
-        return {k: serialization(v) for k, v in vars(obj).items()}
-    elif isinstance(obj, list):
-        return [serialization(i) for i in obj]
-    else:
-        return obj
-
-
-storage = Storage()
-
-#                   Caro
-#                    |
-#                   Room
-#                  /    \
-#               Game    User
-# user event ------------------------------------------------------------------------
-
 
 @socketio.event
 def connect():
-    userId = request.sid
-    user = User(id=userId, name=name_generation(5))
-    storage.users[userId] = user
-    print(">> client {} connected to server".format(userId))
+    print(">> client {} connected to server".format(request.sid))
 
-
-@socketio.event
-def disconnect():
-    requestId = request.sid
-    storage.users.pop(requestId)
-    print(">> client {} disconnected from server".format(requestId))
-
-
-@socketio.on("register")
-def register(payload):
-
-    user = User(name=payload["name"])
-    storage.users[userId] = user
-    socketio.emit(
-        "register",
-        {
+@socketio.on("access_require")
+def accessRequire(payload):
+    token = request.headers.get('x-auth-token')
+    if token:
+        userId = decode_jwt(token)['sub']
+        user = storage.users.get(userId)
+        if user is None or user.currentToken != token:
+            raise Exception(">> Auth Exeption")
+        del storage.users[userId]
+        user.id = request.sid
+        token = encode_jwt(user.id)
+        user.currentToken = token
+        storage.users[user.id] = user
+    else:
+        user = User(id=request.sid, name=name_generation(5))
+        token = encode_jwt(user.id)
+        user.currentToken = token
+        storage.users[user.id] = user
+        
+    socketio.emit("access_success", {
+            "token": str(token),
             "user": serialization(user),
-        },
-        to=userId,
+        }, to=request.sid
     )
 
+# @socketio.on("register")
+# def register(payload):
 
+#     user = User(name=payload["name"])
+#     storage.users[userId] = user
+#     socketio.emit("register", {
+#             "user": serialization(user),
+#         },
+#         to=userId,
+#     )
+
+@authentication_required
 @socketio.on("get_users")
 def getUser(payload):
     userId = request.sid
     users = list(storage.users.values())
     socketio.emit(
-        "list_of_user",
-        {
+        "list_of_user", {
             "users": serialization(users),
-        },
-        to=userId,
+        }, to=userId,
     )
 
-
 # room event ------------------------------------------------------------------------
-
 
 @socketio.on("room_list")
 def handle_fetch_rooms(payload):
@@ -126,21 +101,16 @@ def handle_fetch_rooms(payload):
     # )
     socketio.emit("list_of_room", {"rooms": serialization(rooms)}, to=request.sid)
 
-
 @socketio.on("create_room")
-def createRoom(payload):
-    userId = request.sid
-
-    room = storage.createRoom(payload["room_name"], userId)
-    socketio.emit(
-        "room_create",
-        {
+@authentication_required
+def createRoom(payload: dict):
+    room = storage.createRoom(payload["room_name"], request.sid)
+    socketio.emit("room_created", {
             "room": serialization(room),
-        },
-        to=userId,
+        }, to=request.sid,
     )
 
-
+@authentication_required
 @socketio.on("join_room")  # handle for competitor
 def joinRoom(payload):
     # find
@@ -162,18 +132,15 @@ def joinRoom(payload):
 
     # response
     socketio.emit(
-        "joined_room",
-        {"message": "Joined room", "room": serialization(room)},
+        "joined_room", {"message": "Joined room", "room": serialization(room)},
         to=[room.participantIds()],
     )
 
-
+@authentication_required
 @socketio.on("on_kick")  # handle for competitor
 def onKick(payload):
     # find
-    owner = storage.users.get(request.sid)
     room = storage.rooms.get(payload["room_id"])
-    guest = storage.users.get(payload["guest_id"])
 
     # action
     room.kick(payload["guest_id"])
@@ -183,12 +150,11 @@ def onKick(payload):
 
     # response
     socketio.emit(
-        "kicked",
-        {"message": "User was kicked", "room": serialization(room)},
+        "kicked", {"message": "User was kicked", "room": serialization(room)},
         to=[room.participantIds()],
     )
 
-
+@authentication_required
 @socketio.on("add_bot")
 def add_bot(payload):
     # find
@@ -215,7 +181,7 @@ def add_bot(payload):
         to=[room.owner.info.id],
     )
 
-
+@authentication_required
 @socketio.on("change_status")
 def changeStatus(payload):
     room = storage.rooms.get(payload["room_id"])
@@ -242,7 +208,7 @@ def changeStatus(payload):
         to=[room.participantIds()],
     )
 
-
+@authentication_required
 @socketio.on("leave_room")  # handle for competitor
 def leaveRoom(payload):
     # find
@@ -270,7 +236,7 @@ def leaveRoom(payload):
         to=[room.participantIds(), request.sid],
     )
 
-
+@authentication_required
 @socketio.on("start_game")
 def startGame(payload):
     # find
@@ -304,7 +270,7 @@ def startGame(payload):
         to=[room.participantIds()],
     )
 
-
+@authentication_required
 @socketio.on("move")
 def move(payload):
     # find
