@@ -2,9 +2,11 @@ import uuid
 
 
 class User:
-    def __init__(self, name: str, id: str = uuid.uuid4().__str__()):
-        self.name = name
+    def __init__(self, name: str, id: str):
         self.id = id
+        self.name = name
+        self.currentToken = None
+        self.storageId = str(uuid.uuid4())
 
     def serialize(self):
-        return {"id": self.id, "name": self.name}
+        return {"name": self.name, "id": self.id}

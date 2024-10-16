@@ -53,12 +53,11 @@ class Room:
 
     def kick(self, userId: str):
         requestId = request.sid
-        if requestId != self.owner.info.id:
+        if requestId != self.owner.info.currentSessionId:
             raise Exception("You are not the owner")
 
         if self.competitor is not None and self.competitor.info.id == userId:
             self.competitor = None
-
         else:
             for user in self.guests:
                 if user.id == userId:
@@ -68,14 +67,14 @@ class Room:
     def addGuest(self, user: User):
         self.guests.append(user)
 
-    def changeGameType(self, gameType: str) -> None:
-        if request.sid != self.owner.info.id:
-            raise Exception("You are not the owner")
-        try:
-            if self.owner.info.id == request.sid:
-                self.gameType = GameType[gameType]
-        except KeyError:
-            raise Exception(f"Not found any game type with {gameType} !")
+    # def changeGameType(self, gameType: str) -> None:
+    #     if request.sid != self.owner.info.id:
+    #         raise Exception("You are not the owner")
+    #     try:
+    #         if self.owner.info.id == request.sid:
+    #             self.gameType = GameType[gameType]
+    #     except KeyError:
+    #         raise Exception(f"Not found any game type with {gameType} !")
 
     def addCompetitor(self, user: User):
         self.competitor = Participant(user)

@@ -196,3 +196,28 @@
         }
     ]
 }
+
+
+token = {
+    "header": {
+        "alg": "HS256",
+        "typ": "Authentication Token"
+    },
+    "payload": {
+        "sub": "USERS_UUID",
+        "iat": 1516239022,
+        "lastest_session_id": "xjkkf67hf-uue83n"
+    },
+    "signature": " base64UrlEncode(header) + "." + base64UrlEncode(payload), your-256-bit-secret"
+}
+
+const socket = io('http://your-server-url', {
+    auth: {
+        "token": 'your-token'
+    }
+});
+
+socket.emit('game_start', {
+    "payload": 'CHơi cờ thôi nào!',
+    "token": 'your-token'  // Gửi kèm token nếu cần xác thực cho sự kiện này
+});
