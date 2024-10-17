@@ -28,14 +28,17 @@ class Game(ABC):
                 return player
 
     def handleMove(self, player: Player, point: Point) -> None:
-        if self.turn != player.symbol:
-            raise Exception("Not your turn")
-
-        if self.board[point.y][point.x] != Cell.NONE:
-            raise Exception("Cell is not empty")
-
-        self.board[point.y][point.x] = player.symbol
-        self.updateTurn()
+        print("handleMove")
+        print(player)
+        print(point)
+        # if self.turn != player.symbol:
+        #     raise Exception("Not your turn")
+        #
+        # if self.board[point.y][point.x] != Cell.NONE:
+        #     raise Exception("Cell is not empty")
+        #
+        # self.board[point.y][point.x] = player.symbol
+        # self.updateTurn()
         return
 
     def addPlayer(self: Game, player: Player) -> None:

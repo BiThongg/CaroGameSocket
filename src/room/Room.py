@@ -1,4 +1,4 @@
-from typing import Dict, List
+from typing import List
 import uuid
 
 from flask import request
@@ -12,13 +12,16 @@ from player.PersonPlayer import PersonPlayer
 from player.Player import Player
 from enum import Enum
 
+
 class UserStatus(Enum):
     NOT_READY = "NOT_READY"
     READY = "READY"
 
+
 class GameType(Enum):
-    TIC_TAC_TOE = "TIC_TAC_TOE",
+    TIC_TAC_TOE = "TIC_TAC_TOE"
     CASUAL = "CASUAL"
+
 
 class GameFactory:
     gameDict = {
@@ -29,11 +32,13 @@ class GameFactory:
     @staticmethod
     def construct(gameType: GameType) -> Game:
         return GameFactory.gameDict[gameType]()
-    
-class Participant: 
+
+
+class Participant:
     def __init__(self, user: User):
         self.info: User = user
-        self.status: UserStatus = UserStatus.NOT_READY
+        self.status: UserStatus = UserStatus.READY
+
 
 class Room:
     def __init__(self, name, owner: User):
@@ -48,12 +53,11 @@ class Room:
 
     def kick(self, userId: str):
         requestId = request.sid
-        if requestId != self.owner.info.id:
+        if requestId != self.owner.info.currentSessionId:
             raise Exception("You are not the owner")
 
         if self.competitor is not None and self.competitor.info.id == userId:
             self.competitor = None
-
         else:
             for user in self.guests:
                 if user.id == userId:
@@ -63,26 +67,29 @@ class Room:
     def addGuest(self, user: User):
         self.guests.append(user)
 
-    def changeGameType(self, gameType: str) -> None:
-        if request.sid != self.owner.info.id:
-            raise Exception("You are not the owner")
-        try:
-            if self.owner.info.id == request.sid:
-                self.gameType = GameType[gameType]
-        except KeyError:
-            raise Exception(f"Not found any game type with {gameType} !")
+    # def changeGameType(self, gameType: str) -> None:
+    #     if request.sid != self.owner.info.id:
+    #         raise Exception("You are not the owner")
+    #     try:
+    #         if self.owner.info.id == request.sid:
+    #             self.gameType = GameType[gameType]
+    #     except KeyError:
+    #         raise Exception(f"Not found any game type with {gameType} !")
 
-    def addCompetitor(self, user: User):            
+    def addCompetitor(self, user: User):
         self.competitor = Participant(user)
         if user.id.startswith("BOT_"):
             self.competitor.status = UserStatus.READY
 
-    def gameStart(self):
+    def gameStart(self, gameType: str | None):
         player1: Player = PersonPlayer(self.owner.info)
-        player2: Player = AIPlayer(self.competitor.info) if self.competitor.info.id.startswith("BOT_") else PersonPlayer(self.competitor.info)
+        player2: Player = (
+            AIPlayer(self.competitor.info)
+            if self.competitor.info.id.startswith("BOT_")
+            else PersonPlayer(self.competitor.info)
+        )
 
-        game: Game = GameFactory.construct(self.gameType)
-        print(game.players)
+        game: Game = GameFactory.construct(GameType[gameType])
         game.addPlayer(player1)
         game.addPlayer(player2)
 
@@ -115,20 +122,34 @@ class Room:
         pass
 
     def isFull(self) -> bool:
-        return self.competitor is not None and self.owner is not None # and len(self.guests) >= 5
-    
+        return (
+            self.competitor is not None and self.owner is not None
+        )  # and len(self.guests) >= 5
+
     def canAction(self, owner) -> bool:
         return owner.id == self.owner.id
 
     def isReady(self) -> bool:
-        return self.competitor.status == UserStatus.READY and self.owner.status == UserStatus.READY 
+        return (
+            self.competitor.status == UserStatus.READY
+            and self.owner.status == UserStatus.READY
+        )
 
     def changeStatus(self, userId: str):
-        participant: Participant = self.owner if self.owner.info.id == userId else self.competitor
-        participant.status = UserStatus.NOT_READY if (participant.status == UserStatus.READY) else UserStatus.READY
+        participant: Participant = (
+            self.owner if self.owner.info.id == userId else self.competitor
+        )
+        participant.status = (
+            UserStatus.NOT_READY
+            if (participant.status == UserStatus.READY)
+            else UserStatus.READY
+        )
 
     def participantIds(self):
-        ids = [watcher.id for watcher in self.guests]
-        ids.append(self.owner.info.id)
+        ids = [watcher.sid for watcher in self.guests]
+        ids.append(self.owner.info.sid)
         if self.competitor is not None:
-            ids.append(self.competitor.info.id)
+            ids.append(self.competitor.info.sid)
+
+
+

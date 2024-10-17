@@ -1,12 +1,12 @@
-from src.game.Game import Game
-from src.player.Player import Player
-from src.util.cell import Cell
+from game.Game import Game
+from player.Player import Player
+from util.cell import Cell
 from random import randint
 
 
 # Casual game is who get 5 in a row will win
 class CasualGame(Game):
-    def __init__(self, size: int = 5):
+    def __init__(self, size: int = 13):
         super().__init__(size)
 
     def getWinnerSymbol(self) -> Cell | None:
