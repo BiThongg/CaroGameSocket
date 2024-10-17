@@ -48,7 +48,7 @@ def encode_jwt(userId: str) -> str:
     
 def authentication_required(f):
     @wraps(f)
-    def decorated_function(*args, **kwargs):
+    def decorated_function(*args):
         data: dict = args[0] if args else {}
         currentToken: str = data.get('token', None)
         userId: str = decode_jwt(currentToken)['sub']

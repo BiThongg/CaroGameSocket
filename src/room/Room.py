@@ -1,4 +1,4 @@
-from typing import Dict, List
+from typing import List
 import uuid
 
 from flask import request
@@ -37,7 +37,7 @@ class GameFactory:
 class Participant:
     def __init__(self, user: User):
         self.info: User = user
-        self.status: UserStatus = UserStatus.NOT_READY
+        self.status: UserStatus = UserStatus.READY
 
 
 class Room:
@@ -81,7 +81,7 @@ class Room:
         if user.id.startswith("BOT_"):
             self.competitor.status = UserStatus.READY
 
-    def gameStart(self, gameType: str):
+    def gameStart(self, gameType: str | None):
         player1: Player = PersonPlayer(self.owner.info)
         player2: Player = (
             AIPlayer(self.competitor.info)
@@ -90,7 +90,6 @@ class Room:
         )
 
         game: Game = GameFactory.construct(GameType[gameType])
-        print(game.players)
         game.addPlayer(player1)
         game.addPlayer(player2)
 
@@ -147,7 +146,10 @@ class Room:
         )
 
     def participantIds(self):
-        ids = [watcher.id for watcher in self.guests]
-        ids.append(self.owner.info.id)
+        ids = [watcher.sid for watcher in self.guests]
+        ids.append(self.owner.info.sid)
         if self.competitor is not None:
-            ids.append(self.competitor.info.id)
+            ids.append(self.competitor.info.sid)
+
+
+

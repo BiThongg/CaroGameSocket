@@ -1,71 +1,79 @@
-import numpy as np
-
 from flask_cors import CORS
-from datetime import datetime
-import uuid, json, random, string
-from flask import Flask, session, request, make_response
-from flask_socketio import SocketIO, emit, join_room, leave_room, send
-import math
-from enum import Enum
-import jsonpickle
+import uuid
+from flask import Flask, request
+from flask_socketio import SocketIO, emit
 
 from User import User
-from game.Game import Game
 from player.AIPlayer import AIPlayer
 from player.PersonPlayer import PersonPlayer
-from player.Player import Player
-from room.Room import Room
 from util.point import Point
 from util.serializeFilter import serializationFilter
 from util.serialize import serialization
-from util.nameGeneration import name_generation
 from database.data import storage
-from auth.authentication import decode_jwt, encode_jwt, authentication_required
+from auth.authentication import authentication_required
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = "CARO_GAME_SUPER_VIP_PRO_MAX"
 CORS(app, resources={r"/*": {"origins": "*"}})
 socketio = SocketIO(app, cors_allowed_origins="*")
 
+
 @socketio.event
 def connect():
-    print(">> client {} connected to server".format(request.sid))
-
-@socketio.on("access_require")
-def accessRequire(payload):
-    token = request.headers.get('x-auth-token')
-    if token:
-        userId = decode_jwt(token)['sub']
-        user = storage.users.get(userId)
-        if user is None or user.currentToken != token:
-            raise Exception(">> Auth Exeption")
-        del storage.users[userId]
-        user.id = request.sid
-        token = encode_jwt(user.id)
-        user.currentToken = token
-        storage.users[user.id] = user
+    user_id = request.args.get("user_id")
+    if user_id in storage.users:
+        user = storage.users[user_id]
+        print(">> {} + {}".format(user.name, user.sid))
+        user.sid = request.sid
+        print(">> {} + {}".format(user.name, user.sid))
     else:
-        user = User(id=request.sid, name=name_generation(5))
-        token = encode_jwt(user.id)
-        user.currentToken = token
-        storage.users[user.id] = user
-        
-    socketio.emit("access_success", {
-            "token": str(token),
+        emit("error", {"message": "User not found"}, to=request.sid)
+
+
+@socketio.on("register")
+def register(payload):
+    user = User(name=payload["name"], sid=request.sid)
+    user_id = user.id
+    storage.users[user_id] = user
+    print(">> user {} registered".format(user_id))
+
+    socketio.emit(
+        "register",
+        {
             "user": serialization(user),
-        }, to=request.sid
+        },
+        to=user.sid,
     )
 
-# @socketio.on("register")
-# def register(payload):
 
-#     user = User(name=payload["name"])
-#     storage.users[userId] = user
-#     socketio.emit("register", {
+# @socketio.on("access_require")
+# def accessRequire(payload):
+#     token = request.headers.get('x-auth-token')
+#     if token:
+#         userId = decode_jwt(token)['sub']
+#         user = storage.users.get(userId)
+#         if user is None or user.currentToken != token:
+#             raise Exception(">> Auth Exeption")
+#         del storage.users[userId]
+#         user.id = request.sid
+#         token = encode_jwt(user.id)
+#         user.currentToken = token
+#         storage.users[user.id] = user
+#     else:
+#         user = User(id=request.sid, name=name_generation(5))
+#         token = encode_jwt(user.id)
+#         user.currentToken = token
+#         storage.users[user.id] = user
+#
+#     socketio.emit("access_success", {
+#             "token": str(token),
 #             "user": serialization(user),
-#         },
-#         to=userId,
+#         }, to=socketio.id
 #     )
+
+
+# ------------------------------------------------------------------------
+
 
 @authentication_required
 @socketio.on("get_users")
@@ -73,12 +81,16 @@ def getUser(payload):
     userId = request.sid
     users = list(storage.users.values())
     socketio.emit(
-        "list_of_user", {
+        "list_of_user",
+        {
             "users": serialization(users),
-        }, to=userId,
+        },
+        to=userId,
     )
 
+
 # room event ------------------------------------------------------------------------
+
 
 @socketio.on("room_list")
 def handle_fetch_rooms(payload):
@@ -101,14 +113,44 @@ def handle_fetch_rooms(payload):
     # )
     socketio.emit("list_of_room", {"rooms": serialization(rooms)}, to=request.sid)
 
+
 @socketio.on("create_room")
-@authentication_required
 def createRoom(payload: dict):
-    room = storage.createRoom(payload["room_name"], request.sid)
-    socketio.emit("room_created", {
+    room = storage.createRoom(payload["room_name"], payload["user_id"])
+    socketio.emit(
+        "room_created",
+        {
             "room": serialization(room),
-        }, to=request.sid,
+        },
+        to=request.sid,
     )
+
+
+@socketio.on("get_room")
+def getRoomFromUserId(payload):
+    user_id = payload["user_id"]
+    room = next(
+        (
+            room
+            for room in storage.rooms.values()
+            if room.owner.info.id == user_id or room.competitor.info.id == user_id
+        ),
+        None,
+    )
+    if room:
+        socketio.emit(
+            "room_info",
+            {
+                "room": serialization(room),
+            },
+            to=request.sid,
+        )
+    else:
+        emit("error", {"message": "Room not found"}, to=request.sid)
+
+
+# -----------------------------------------------------------------------
+
 
 @authentication_required
 @socketio.on("join_room")  # handle for competitor
@@ -132,9 +174,11 @@ def joinRoom(payload):
 
     # response
     socketio.emit(
-        "joined_room", {"message": "Joined room", "room": serialization(room)},
+        "joined_room",
+        {"message": "Joined room", "room": serialization(room)},
         to=[room.participantIds()],
     )
+
 
 @authentication_required
 @socketio.on("on_kick")  # handle for competitor
@@ -150,38 +194,35 @@ def onKick(payload):
 
     # response
     socketio.emit(
-        "kicked", {"message": "User was kicked", "room": serialization(room)},
+        "kicked",
+        {"message": "User was kicked", "room": serialization(room)},
         to=[room.participantIds()],
     )
 
-@authentication_required
+
 @socketio.on("add_bot")
 def add_bot(payload):
-    # find
     room = storage.rooms.get(payload["room_id"])
 
-    # validate
     if room is None or room.isFull():
+        print(room)
         socketio.emit(
             "add_bot_failed",
             {"message": "Some error happend please try again !"},
             to=request.sid,
         )
-    # if avalable
-    bot = User(name="BOT", id="BOT_{}".format(uuid.uuid4()))
+    bot = User(name="BOT", sid=None)
+    bot.id = "BOT_" + bot.id
+
     room.addCompetitor(bot)
 
-    # save
-    storage.rooms[room.id] = room
-
-    # response
     socketio.emit(
         "added_bot",
         {"message": "bot added into room", "room": serialization(room)},
-        to=[room.owner.info.id],
+        to=request.sid,
     )
 
-@authentication_required
+
 @socketio.on("change_status")
 def changeStatus(payload):
     room = storage.rooms.get(payload["room_id"])
@@ -208,7 +249,7 @@ def changeStatus(payload):
         to=[room.participantIds()],
     )
 
-@authentication_required
+
 @socketio.on("leave_room")  # handle for competitor
 def leaveRoom(payload):
     # find
@@ -236,15 +277,13 @@ def leaveRoom(payload):
         to=[room.participantIds(), request.sid],
     )
 
-@authentication_required
+
 @socketio.on("start_game")
 def startGame(payload):
-    # find
-    user = storage.users.get(request.sid)
+    user = storage.users.get(payload["user_id"])
     room = storage.rooms.get(payload["room_id"])
     gameType: str = payload["game_type"]
 
-    # validate
     if user.id != room.owner.info.id or room.isReady() == False:
         socketio.emit(
             "start_game_failed",
@@ -270,7 +309,7 @@ def startGame(payload):
         to=[room.participantIds()],
     )
 
-@authentication_required
+
 @socketio.on("move")
 def move(payload):
     # find
@@ -320,16 +359,19 @@ def botMoveSumoku(payload):
             {"message": "Some error happend please try again !"},
             to=request.sid,
         )
+
     game = room.game
     player: AIPlayer = next(
         (player for player in game.players if player.user.id.startswith("BOT_")), None
     )
+
     if not player:
         socketio.emit(
             "bot_move_failed",
             {"message": "Some error happend please try again !"},
             to=request.sid,
         )
+
     else:
         if game.board.__len__() == 3:
             player.makeMoveTictactoe()
@@ -371,180 +413,6 @@ def botMoveTictactoe(payload):
         player.makeMoveTictactoe()
 
 
-# @socketio.on("get_test")
-# def handle_get_test(paayload):
-#     user1 = User(id=request.sid, name="aaa")
-#     user2 = User(id="xnxx2", name="bbb")
-#     room = Room("Hello 500 ace")
-#     room.lead = request.sid
-#     room.guest = user2.id
-#     room.ready_player = [request.sid, user2.id]
-#     game = Game(user1.id, user2.id)
-#     room.game.append(game.id)
-#
-#     caro_game.rooms[room.id] = room
-#     caro_game.users[user1.id] = user1
-#     caro_game.users[user2.id] = user2
-#     caro_game.games[game.id] = game
-#
-#     socketio.emit(
-#         "get_test",
-#         {
-#             "code": 200,
-#             "message": "Get test",
-#             "room": {
-#                 "room_info": serialization(room),
-#                 "game_time": game.game_time,
-#                 "chess_board": game.chess_board,
-#             },
-#         },
-#         to=request.sid,
-#     )
-#
-#
-# @socketio.on("room_list")
-# def handle_fetch_rooms(payload):
-#     # get rooms existing
-#     raw = list(caro_game.rooms.values())
-#     # pagination
-#     idxfrom = (payload["page"] - 1) * payload["size"]
-#     dicts = raw[idxfrom : idxfrom + payload["size"] + 1]
-#     sorted(dicts, key=lambda x: len(x.ready_player), reverse=True)
-#     res = []
-#     for room in dicts:
-#         res.append(serialization(room))
-#     # send
-#     socketio.emit(
-#             "room_list", {"code": 200, "message": "Room list", "rooms": res , }, to=request.sid
-#     )
-#
-#
-# @socketio.on("change_status")
-# def handle_change_status(payload):
-#     # find
-#
-#     room = caro_game.rooms.get(payload["room_id"])
-#
-#     # validate
-#     if room.is_in_room(request.sid) == False:
-#         socketio.emit(
-#             "change_status",
-#             {
-#                 "code": 400,
-#                 "message": "You cannot change status",
-#                 "rooms": serialization(room),
-#             },
-#             to=request.sid,
-#         )
-#         return
-#
-#     # set
-#     if request.sid in room.ready_player:
-#         room.ready_player.remove(request.sid)
-#     else:
-#         room.ready_player.append(request.sid)
-#
-#     # save
-#     caro_game.rooms[room.id] = room
-#
-#     # send
-#     socketio.emit(
-#         "change_status",
-#         {
-#             "code": 200,
-#             "message": "change status successfully",
-#             "rooms": serialization(room),
-#         },
-#         to=[room.guest, room.lead, *room.watchers],
-#     )
-#
-#
-# @socketio.on("create_room")
-# def handle_create_room(payload):
-#     # create
-#     room = Room(payload["room_name"])
-#
-#     # construct relationship
-#     user = caro_game.users.get(request.sid)
-#     room.lead = user.id
-#
-#     # save
-#     caro_game.rooms[room.id] = room
-#     caro_game.users[user.id] = user
-#     # response
-#     socketio.emit(
-#         "create_room",
-#         {"code": 200, "message": "Room created", "room": serialization(room)},
-#         to=request.sid,
-#     )
-#
-#
-# @socketio.on("join_room")
-# def handle_join_room(payload):
-#     # find
-#     room = caro_game.rooms.get(payload["room_id"])
-#     # validate
-#     if room is None or room.is_full():
-#         # if not exist or full
-#         # response
-#         socketio.emit("join_room", {"code": 404, "message": "Not found room"})
-#     else:
-#         # if avalable
-#         # construct relation ship
-#         user = caro_game.users.get(request.sid)
-#         room.guest = user.id
-#
-#         # save
-#         caro_game.rooms[room.id] = room
-#         caro_game.users[user.id] = user
-#         # response
-#         socketio.emit(
-#             "join_room",
-#             {"code": 200, "message": "Joined room", "room": serialization(room)},
-#             to=[room.guest, room.lead, *room.watchers],
-#         )
-#
-#
-# @socketio.on("room_start")
-# def handle_start_game(payload):
-#     room = caro_game.rooms.get(payload["room_id"])
-#     if room is None or room.is_ready() == False:
-#         socketio.emit(
-#             "room_start",
-#             {
-#                 "code": 400,
-#                 "message": "Can't start because not enough members are ready",
-#             },
-#             to=[request.sid],
-#         )
-#     else:
-#         # create
-#         game = Game(room.lead, room.guest)
-#
-#         # relationship
-#         game.room = room.id
-#         room.game.append(game.id)
-#
-#         # save
-#         caro_game.games[game.id] = game
-#         caro_game.rooms[room.id] = room
-#
-#         # response
-#         socketio.emit(
-#             "room_start",
-#             {
-#                 "code": 200,
-#                 "message": "Starting game play success",
-#                 "data": {
-#                     "room": serialization(room),
-#                     "game_time": game.game_time,
-#                     "chess_board": serialization(game.chess_board.tolist()),
-#                 },
-#             },
-#             to=[*room.ready_player, *room.watchers],
-#         )
-#
-#
 # @socketio.on("leave_room")
 # def handle_leave_room(payload):
 #     # find
@@ -572,35 +440,7 @@ def botMoveTictactoe(payload):
 #         )
 #
 #
-# @socketio.on("hehe")
-# def handle_test(payload):
-#     print(payload)
-#     socketio.emit("test", {"code": 199, "message": "Test success"}, to=request.sid)
-#
-#
-# # game event -----------------------------------------------------------------------------------------------------
-#
-# # @socketio.on('strike_out')
-# # def handle_strike_out(payload):
-# #     game = caro_game.games.get(payload['game_id'])
-# #     # validate
-# #     if(game.is_can_strike(request.ids) ==  False):
-# #         socketio.emit('strike_out', {
-# #             "code": 400,
-# #             "message": 'Cannot strike out'
-# #         }, to=request.ids)
-#
-# #     mark = payload['mark']
-# #     if game.is_end_game(mark):
-# #         game.winner = request.sid
-# #         socketio.emit('strike_out', {
-# #             "code": 200,
-# #             "message": 'End game',
-# #             "game": serialization(game)
-# #         }, to=request.ids)
-# #     else:
-#
-#
+
 if __name__ == "__main__":
     try:
         socketio.run(app, debug=False)
