@@ -2,10 +2,12 @@ from flask_cors import CORS
 import uuid
 from flask import Flask, request
 from flask_socketio import SocketIO, emit
+from numpy import require
 
 from User import User
 from player.AIPlayer import AIPlayer
 from player.PersonPlayer import PersonPlayer
+from room.Room import Room
 from util.point import Point
 from util.serializeFilter import serializationFilter
 from util.serialize import serialization
@@ -205,16 +207,13 @@ def add_bot(payload):
     room = storage.rooms.get(payload["room_id"])
 
     if room is None or room.isFull():
-        print(room)
         socketio.emit(
             "add_bot_failed",
             {"message": "Some error happend please try again !"},
             to=request.sid,
         )
-    bot = User(name="BOT", sid=None)
-    bot.id = "BOT_" + bot.id
 
-    room.addCompetitor(bot)
+    room.addBot()
 
     socketio.emit(
         "added_bot",
@@ -284,22 +283,14 @@ def startGame(payload):
     room = storage.rooms.get(payload["room_id"])
     gameType: str = payload["game_type"]
 
-    if user.id != room.owner.info.id or room.isReady() == False:
+    if not room.checkConditionForStart(user.id):
         socketio.emit(
             "start_game_failed",
             {"message": "Some error happend please try again !"},
             to=request.sid,
         )
 
-    # if avalable
     room.gameStart(gameType)
-
-    # save
-    storage.rooms[room.id] = room
-    for item in list(room.game.players[:]):
-        item.game = "__HIDE__"
-
-    # response
     socketio.emit(
         "started_game",
         {
@@ -312,32 +303,25 @@ def startGame(payload):
 
 @socketio.on("move")
 def move(payload):
-    # find
-    print(payload)
-    user = storage.users.get(request.sid)
-    room = storage.rooms.get(payload["room_id"])
-    print(room)
+    print(f"Move: {request.sid}")
+
+    user:User = storage.users.get(payload["user_id"])
+    room:Room = storage.rooms.get(payload["room_id"])
     game = room.game
+
+    if not game.checkPlayer(user.id):
+        socketio.emit(
+            "move_failed",
+            {"message": "Some error happend please try again !"},
+            to=request.sid,
+        )
+
+    player = game.getPlayer(user_id= user.id)
     pointTmp: dict = payload["point"]
     point = Point(int(pointTmp["x"]), int(pointTmp["y"]))
 
-    player: PersonPlayer = next(
-        (player for player in game.players if player.user.id == user.id), None
-    )
-
-    # if not player:
-    #     socketio.emit(
-    #         "move_failed",
-    #         {"message": "Some error happend please try again !"},
-    #         to=request.sid,
-    #     )
-
-    # print(player.game.turn)
-    # room.game.handleMove(player, point)
-    # player.move(point)
-
-    # save
-    storage.rooms[room.id] = room
+    player.move(point)
+    print(vars(room.game))
 
     # response
     socketio.emit(
@@ -346,8 +330,10 @@ def move(payload):
             "message": "Moved",
             "game": serializationFilter(room.game, ["game"]),
         },
-        to=[room.participantIds()],
+        to= [room.participantIds()],
     )
+
+
 
 
 @socketio.on("bot_move")
@@ -357,13 +343,17 @@ def botMoveSumoku(payload):
         socketio.emit(
             "bot_move_failed",
             {"message": "Some error happend please try again !"},
-            to=request.sid,
+            to= [room.participantIds()],
         )
+
+    print(vars(room.game))
 
     game = room.game
     player: AIPlayer = next(
         (player for player in game.players if player.user.id.startswith("BOT_")), None
     )
+
+    print(player)
 
     if not player:
         socketio.emit(
@@ -372,11 +362,11 @@ def botMoveSumoku(payload):
             to=request.sid,
         )
 
-    else:
-        if game.board.__len__() == 3:
-            player.makeMoveTictactoe()
-        else:
-            player.makeMoveSumoku()
+    # else:
+    #     if game.board.__len__() == 3:
+    #         player.makeMoveTictactoe()
+    #     else:
+    #         player.makeMoveSumoku()
 
     socketio.emit(
         "moved",
@@ -384,7 +374,7 @@ def botMoveSumoku(payload):
             "message": "Bot moved",
             "game": serializationFilter(room.game, ["game"]),
         },
-        to=[room.participantIds()],
+        to= [room.participantIds()],
     )
 
 

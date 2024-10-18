@@ -12,6 +12,8 @@ from player.PersonPlayer import PersonPlayer
 from player.Player import Player
 from enum import Enum
 
+from util.cell import Cell
+
 
 class UserStatus(Enum):
     NOT_READY = "NOT_READY"
@@ -78,10 +80,8 @@ class Room:
 
     def addCompetitor(self, user: User):
         self.competitor = Participant(user)
-        if user.id.startswith("BOT_"):
-            self.competitor.status = UserStatus.READY
 
-    def gameStart(self, gameType: str | None):
+    def gameStart(self, gameType: str):
         player1: Player = PersonPlayer(self.owner.info)
         player2: Player = (
             AIPlayer(self.competitor.info)
@@ -92,9 +92,16 @@ class Room:
         game: Game = GameFactory.construct(GameType[gameType])
         game.addPlayer(player1)
         game.addPlayer(player2)
-
-        game.randomSeed()
         self.game = game
+
+        # game.randomSeed()
+        player1.symbol = Cell.X
+        player2.symbol = Cell.O
+        game.updateTurn()
+
+        player1.game = game
+        player2.game = game
+
 
     def getOwnerInfo(self) -> User:
         return self.owner.info
@@ -135,6 +142,12 @@ class Room:
             and self.owner.status == UserStatus.READY
         )
 
+    def checkConditionForStart(self, user_id) -> bool:
+        if user_id != self.owner.info.id or self.isReady() == False:
+            return False
+
+        return True
+
     def changeStatus(self, userId: str):
         participant: Participant = (
             self.owner if self.owner.info.id == userId else self.competitor
@@ -145,11 +158,12 @@ class Room:
             else UserStatus.READY
         )
 
-    def participantIds(self):
+    def participantIds(self) -> List[str]:
         ids = [watcher.sid for watcher in self.guests]
         ids.append(self.owner.info.sid)
         if self.competitor is not None:
             ids.append(self.competitor.info.sid)
 
-
-
+    def addBot(self) -> None:
+        self.competitor = Participant(User("BOT_" + str(uuid.uuid4()), None))
+        self.competitor.status = UserStatus.READY
