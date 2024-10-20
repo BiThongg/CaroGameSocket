@@ -1,4 +1,6 @@
 from typing import Dict, List
+
+from jsonpickle.handlers import uuid
 from User import User
 from room.Room import Room
 
@@ -40,6 +42,8 @@ class Storage:
         user = self.users.get(userId)
         if user is None:
             raise Exception("User not found")
+        name = str(uuid.uuid4())
+
         room = Room(name=name, owner=user)
         self.addRoom(room)
         return room

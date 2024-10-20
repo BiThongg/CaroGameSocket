@@ -1,6 +1,8 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 from abc import ABC, abstractmethod
+
+from numpy import info
 from util.point import Point
 from typing import List
 from rich.console import Console
@@ -50,6 +52,14 @@ class Game(ABC):
                 return player
 
         return None
+    
+    def getBot(self) -> Player: 
+        for player in self.players:
+            if player.user.name.startswith("BOT_"):
+                return player
+        return None
+
+
 
     def addPlayer(self: Game, player: Player) -> None:
         player.game = self

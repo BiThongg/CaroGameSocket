@@ -126,86 +126,85 @@ class CaroModel:
             return self.max_alpha_beta(-2, 2)
         return 1
 
-    def max_alpha_beta(self, alpha, beta, board):
-        maxv = -2
-        px = None
-        py = None
-
+    def max_alpha_beta(self, alpha, beta, board, depth=0):
+        # Check if the game has reached a terminal state
         result = self.terminal(board)
-        if result is True:
-            winner_person = self.winner(board)
-            if winner_person == Cell.X:
-                return (1, 0, 0)
-            elif winner_person == Cell.O:
-                return (-1, 0, 0)
+        if result:
+            winner = self.winner(board)
+            if winner == Cell.X:
+                return (1, None, None)  # X wins
+            elif winner == Cell.O:
+                return (-1, None, None)  # O wins
             else:
-                return (0, 0, 0)
+                return (0, None, None)  # Draw
 
-        start = time.time()
+        maxv = -float("inf")
+        px = py = None
+
+        start_time = time.time()
 
         for action in self.actions(board):
             (i, j) = action
-            if (time.time() - start) > self.time_limit:
+
+            # Time limit check
+            if (time.time() - start_time) > self.time_limit:
                 return (maxv, px, py)
+
+            # Simulate the move for player X (maximizer)
             board[i][j] = Cell.X
-            (m, min_i, min_j) = self.min_alpha_beta(alpha, beta, board)
-            if m == 1:
-                board[i][j] = Cell.NONE
-                return (1, i, j)
+            (m, _, _) = self.min_alpha_beta(alpha, beta, board, depth + 1)
+            board[i][j] = Cell.NONE  # Undo move
 
             if m > maxv:
                 maxv = m
                 px = i
                 py = j
-            board[i][j] = Cell.NONE
 
             if maxv >= beta:
-                return (maxv, px, py)
+                return (maxv, px, py)  # Beta cutoff (pruning)
 
-            if maxv > alpha:
-                alpha = maxv
+            alpha = max(alpha, maxv)
 
         return (maxv, px, py)
 
-    def min_alpha_beta(self, alpha, beta, board):
-        minv = 2
-
-        qx = None
-        qy = None
-
+    def min_alpha_beta(self, alpha, beta, board, depth=0):
+        # Check if the game has reached a terminal state
         result = self.terminal(board)
-        if result is True:
-            winner_person = self.winner(board)
-            if winner_person == Cell.X:
-                return (1, 0, 0)
-            elif winner_person == Cell.O:
-                return (-1, 0, 0)
+        if result:
+            winner = self.winner(board)
+            if winner == Cell.X:
+                return (1, None, None)  # X wins
+            elif winner == Cell.O:
+                return (-1, None, None)  # O wins
             else:
-                return (0, 0, 0)
-        start = time.time()
+                return (0, None, None)  # Draw
+
+        minv = float("inf")
+        qx = qy = None
+
+        start_time = time.time()
 
         for action in self.actions(board):
             (i, j) = action
-            if (time.time() - start) > self.time_limit:
+
+            # Time limit check
+            if (time.time() - start_time) > self.time_limit:
                 return (minv, qx, qy)
 
-            if board[i][j] == Cell.NONE:
-                board[i][j] = Cell.O
-                (m, max_i, max_j) = self.max_alpha_beta(alpha, beta, board)
-                if m == -1:
-                    board[i][j] = Cell.NONE
-                    return (-1, i, j)
+            # Simulate the move for player O (minimizer)
+            board[i][j] = Cell.O
+            (m, _, _) = self.max_alpha_beta(alpha, beta, board, depth + 1)
+            board[i][j] = Cell.NONE  # Undo move
 
-                if m < minv:
-                    minv = m
-                    qx = i
-                    qy = j
-                board[i][j] = Cell.NONE
+            if m < minv:
+                minv = m
+                qx = i
+                qy = j
 
-                if minv <= alpha:
-                    return (minv, qx, qy)
+            if minv <= alpha:
+                return (minv, qx, qy)  # Alpha cutoff (pruning)
 
-                if minv < beta:
-                    beta = minv
+            beta = min(beta, minv)
 
         return (minv, qx, qy)
+
