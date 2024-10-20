@@ -1,5 +1,6 @@
 # Create Room
-{ 
+
+{
     "room_name": "Xin chao 500 ace"
 },
 {
@@ -23,7 +24,7 @@
 
 
 # Join Room
-{ 
+{
     "room_id": "c1cdb11a-0c15-4bc5-8ad1-97dd0f67aa13"
 },
 {
@@ -107,7 +108,7 @@
 # Add Bot
 {
     "room_id": "c1cdb11a-0c15-4bc5-8ad1-97dd0f67aa13",
-}, 
+},
 {
     "message": "bot added into room",
     "room": {
@@ -211,13 +212,17 @@ token = {
     "signature": " base64UrlEncode(header) + "." + base64UrlEncode(payload), your-256-bit-secret"
 }
 
-const socket = io('http://your-server-url', {
+const socket = io('http: //your-server-url', {
     auth: {
-        "token": 'your-token'
-    }
+    "token": 'your-token'
+}
 });
 
-socket.emit('game_start', {
-    "payload": 'CHơi cờ thôi nào!',
-    "token": 'your-token'  // Gửi kèm token nếu cần xác thực cho sự kiện này
+socket.emit('game_start',
+{
+"payload": 'Chơi cờ thôi nào!',
+"token": 'your-token' // Gửi kèm token nếu cần xác thực cho sự kiện này
 });
+
+
+

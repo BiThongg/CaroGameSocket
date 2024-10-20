@@ -1,8 +1,7 @@
 from typing import List
 import uuid
 
-from flask import request
-
+from numpy import random
 from game.Game import Game
 from game.TicTacToe import TicTacToe
 from game.CasualGame import CasualGame
@@ -11,6 +10,7 @@ from player.AIPlayer import AIPlayer
 from player.PersonPlayer import PersonPlayer
 from player.Player import Player
 from enum import Enum
+from util.cell import Cell
 
 
 class UserStatus(Enum):
@@ -42,7 +42,7 @@ class Participant:
 
 class Room:
     def __init__(self, name, owner: User):
-        self.id: str = str(uuid.uuid4())
+        self.id: str = str(random.randint(100000, 100000 * 2 - 1))
         self.name: str = name
         self.competitor: Participant = None
         self.owner: Participant = Participant(owner)
@@ -51,16 +51,16 @@ class Room:
         self.guests: List[User] = []
         self.game: Game = None
 
-    def kick(self, userId: str):
-        requestId = request.sid
-        if requestId != self.owner.info.currentSessionId:
-            raise Exception("You are not the owner")
+    def kick(self, owner_id: str, kickId: str):
+        if owner_id != self.owner.info.id:
+            raise Exception("You are not owner")
 
-        if self.competitor is not None and self.competitor.info.id == userId:
+        if self.competitor is not None and self.competitor.info.id == kickId:
             self.competitor = None
+
         else:
             for user in self.guests:
-                if user.id == userId:
+                if user.id == kickId:
                     self.guests.remove(user)
                     break
 
@@ -78,23 +78,23 @@ class Room:
 
     def addCompetitor(self, user: User):
         self.competitor = Participant(user)
-        if user.id.startswith("BOT_"):
-            self.competitor.status = UserStatus.READY
 
-    def gameStart(self, gameType: str | None):
+    def gameStart(self, gameType: str):
         player1: Player = PersonPlayer(self.owner.info)
         player2: Player = (
             AIPlayer(self.competitor.info)
-            if self.competitor.info.id.startswith("BOT_")
+            if self.competitor.info.name.startswith("BOT_")
             else PersonPlayer(self.competitor.info)
         )
 
         game: Game = GameFactory.construct(GameType[gameType])
         game.addPlayer(player1)
         game.addPlayer(player2)
-
-        game.randomSeed()
         self.game = game
+        # game.randomSeed()
+        player1.symbol = Cell.X
+        player2.symbol = Cell.O
+        game.updateTurn()
 
     def getOwnerInfo(self) -> User:
         return self.owner.info
@@ -103,6 +103,7 @@ class Room:
         if userId == self.owner.info.id:
             self.owner = self.competitor
             self.competitor = None
+
         elif userId == self.competitor.info.id:
             self.competitor = None
         else:
@@ -116,15 +117,16 @@ class Room:
                 self.guests.remove(userTmp)
 
     def onJoin(self, user: User) -> None:
-        self.guests[user.id] = user
+        if self.isFull():
+            self.guests.append(user)
+            return
+        self.addCompetitor(user)
 
     def onDispose(self) -> None:
         pass
 
     def isFull(self) -> bool:
-        return (
-            self.competitor is not None and self.owner is not None
-        )  # and len(self.guests) >= 5
+        return self.competitor is not None and self.owner is not None
 
     def canAction(self, owner) -> bool:
         return owner.id == self.owner.id
@@ -134,6 +136,15 @@ class Room:
             self.competitor.status == UserStatus.READY
             and self.owner.status == UserStatus.READY
         )
+
+    def checkConditionForStart(self, user_id) -> bool:
+        if not self.isFull():
+            return False
+
+        if user_id != self.owner.info.id or not self.isReady():
+            return False
+
+        return True
 
     def changeStatus(self, userId: str):
         participant: Participant = (
@@ -145,11 +156,12 @@ class Room:
             else UserStatus.READY
         )
 
-    def participantIds(self):
+    def participantIds(self) -> List[str]:
         ids = [watcher.sid for watcher in self.guests]
         ids.append(self.owner.info.sid)
         if self.competitor is not None:
             ids.append(self.competitor.info.sid)
 
-
-
+    def addBot(self) -> None:
+        self.competitor = Participant(User("BOT_" + str(uuid.uuid4()), None))
+        self.competitor.status = UserStatus.READY
