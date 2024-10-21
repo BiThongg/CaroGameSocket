@@ -1,5 +1,6 @@
 from typing import Dict, List
 
+from flask_socketio import rooms
 from jsonpickle.handlers import uuid
 from User import User
 from room.Room import Room
@@ -48,3 +49,11 @@ class Storage:
         self.addRoom(room)
         return room
 
+    def deleteUserInRoom(self, user_id: str):
+        for room_id in self.rooms:
+            room = self.rooms[room_id]
+            if user_id == room.owner.info.id:
+                room.owner = None
+
+            if user_id == room.competitor.info.id:
+                room.competitor = None
