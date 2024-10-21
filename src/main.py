@@ -20,11 +20,16 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 def connect():
     user_id = request.args.get("user_id")
     if user_id in storage.users:
-        user = storage.users[user_id]
+        user: User = storage.users[user_id]
         user.sid = request.sid
     else:
         emit("error", {"message": "User not found"}, to=request.sid)
-
+        
+def beforeReconnect(id: str):
+    rooms: list[Room] = storage.getRooms()
+    for room in rooms:
+        if id in room.participantIds():
+            pass
 
 @socketio.on("register")
 def register(payload):
@@ -32,14 +37,11 @@ def register(payload):
     user_id = user.id
     storage.users[user_id] = user
 
-    socketio.emit(
-        "register",
-        {
+    socketio.emit("register", {
             "user": serialization(user),
         },
-        to=user.sid,
+        to=user.sid,    
     )
-
 
 # @socketio.on("access_require")
 # def accessRequire(payload):
@@ -66,8 +68,6 @@ def register(payload):
 #         }, to=socketio.id
 #     )
 
-
-@authentication_required
 @socketio.on("get_users")
 def getUser(payload):
     userId = request.sid
@@ -107,11 +107,9 @@ def handle_fetch_rooms(payload):
 def createRoom(payload: dict):
     room = storage.createRoom(payload["room_name"], payload["user_id"])
     socketio.emit(
-        "room_created",
-        {
+        "room_created", {
             "room": serialization(room),
-        },
-        to=request.sid,
+        }, to=request.sid
     )
 
 
@@ -127,9 +125,7 @@ def getRoomFromUserId(payload):
         None,
     )
     if room:
-        socketio.emit(
-            "room_info",
-            {
+        socketio.emit("room_info", {
                 "room": serialization(room),
             },
             to=request.sid,
@@ -155,30 +151,27 @@ def joinRoom(payload):
     socketio.emit(
         "joined_room",
         {"message": "Joined room", "room": serialization(room)},
-        to=[room.participantIds()],
+        to=room.participantIds(),
     )
-
-
 
 
 @socketio.on("kick")
 def onKick(payload):
-    room:Room = storage.rooms.get(payload["room_id"])
+    room: Room = storage.rooms.get(payload["room_id"])
 
     room.kick(payload["owner_id"], payload["kick_id"])
 
     print(room.participantIds())
 
-    socketio.emit(
-        "kicked",
+    socketio.emit("kicked",
         {"message": "User was kicked", "room": serialization(room)},
-        to=[room.participantIds()],
+        to=room.participantIds(),
     )
 
 
 @socketio.on("add_bot")
 def add_bot(payload):
-    room:Room = storage.rooms.get(payload["room_id"])
+    room: Room = storage.rooms.get(payload["room_id"])
 
     if room is None or room.isFull():
         socketio.emit(
@@ -188,11 +181,11 @@ def add_bot(payload):
         )
 
     room.addBot()
-
-    socketio.emit(
-        "added_bot",
-        {"message": "bot added into room", "room": serialization(room)},
-        to=request.sid,
+    recievers = room.participantIds()
+    socketio.emit("added_bot", {
+            "room": serialization(room)
+        },
+        to=recievers,
     )
 
 
@@ -214,7 +207,7 @@ def changeStatus(payload):
     socketio.emit(
         "status_changed",
         {"room": serialization(room)},
-        to=[room.participantIds()],
+        to=room.participantIds(),
     )
 
 
@@ -226,9 +219,8 @@ def changeGameType(payload):
     socketio.emit(
         "game_type_changed",
         {"game_type": gameType, "room_id": room.id},
-        to=[room.participantIds()],
+        to=room.participantIds(),
     )
-
 
 @socketio.on("leave_room")  # handle for competitor
 def leaveRoom(payload):
@@ -270,13 +262,11 @@ def startGame(payload):
 
     room.gameStart(gameType)
 
-    socketio.emit(
-        "started_game",
-        {
+    socketio.emit("started_game", {
             "message": "Game start !!! Come on",
             "game": serializationFilter(room.game, ["game"]),
         },
-        to=[room.participantIds()],
+        to=room.participantIds(),
     )
 
 
@@ -300,12 +290,11 @@ def move(payload):
     player.move(point)
 
     socketio.emit(
-        "moved",
-        {
+        "moved", {
             "message": "Moved",
             "game": serializationFilter(room.game, ["game"]),
         },
-        to=[room.participantIds()],
+        to=room.participantIds(),
     )
 
 
@@ -316,7 +305,7 @@ def botMoveSumoku(payload):
         socketio.emit(
             "bot_move_failed",
             {"message": "Some error happend please try again !"},
-            to=[room.participantIds()],
+            to=room.participantIds(),
         )
 
     game = room.game
@@ -326,7 +315,7 @@ def botMoveSumoku(payload):
         socketio.emit(
             "bot_move_failed",
             {"message": "Some error happend please try again !"},
-            to=[room.participantIds()],
+            to=room.participantIds(),
         )
 
     if game.board.__len__() == 3:
@@ -340,7 +329,7 @@ def botMoveSumoku(payload):
             "message": "Bot moved",
             "game": serializationFilter(game, ["game"]),
         },
-        to=[room.participantIds()],
+        to=room.participantIds(),
     )
 
 

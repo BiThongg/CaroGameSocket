@@ -161,6 +161,7 @@ class Room:
         ids.append(self.owner.info.sid)
         if self.competitor is not None:
             ids.append(self.competitor.info.sid)
+        return ids
 
     def addBot(self) -> None:
         self.competitor = Participant(User("BOT_" + str(uuid.uuid4()), None))
