@@ -4,7 +4,7 @@ from util.cell import Cell
 from random import randint
 
 class CasualGame(Game):
-    def __init__(self, size: int = 6):
+    def __init__(self, size: int = 14):
         super().__init__(size)
 
     def getWinnerSymbol(self) -> Cell | None:

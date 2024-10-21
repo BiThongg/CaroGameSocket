@@ -1,6 +1,6 @@
 from flask_cors import CORS
 from flask import Flask, request
-from flask_socketio import SocketIO, emit, join_room
+from flask_socketio import SocketIO, emit
 
 from User import User
 from player.AIPlayer import AIPlayer
@@ -15,6 +15,7 @@ app = Flask(__name__)
 app.config["SECRET_KEY"] = "CARO_GAME_SUPER_VIP_PRO_MAX"
 CORS(app, resources={r"/*": {"origins": "*"}})
 socketio = SocketIO(app, cors_allowed_origins="*")
+
 
 @socketio.event
 def connect():
@@ -104,28 +105,23 @@ def handle_fetch_rooms(payload):
 
 
 @socketio.on("create_room")
-def createRoom(payload: dict):
+def createRoom(payload):
     room = storage.createRoom(payload["room_name"], payload["user_id"])
+
     socketio.emit(
         "room_created",
         {
             "room": serialization(room),
         },
-        to=request.sid,
+        to=room.participantIds(),
     )
 
 
 @socketio.on("get_room")
 def getRoomFromUserId(payload):
     user_id = payload["user_id"]
-    room = next(
-        (
-            room
-            for room in storage.rooms.values()
-            if room.owner.info.id == user_id or room.competitor.info.id == user_id
-        ),
-        None,
-    )
+    room = storage.getRoomByUserId(user_id)
+
     if room:
         socketio.emit(
             "room_info",
@@ -150,35 +146,30 @@ def joinRoom(payload):
             to=request.sid,
         )
     # join_room(room.id)
-    
+
     room.onJoin(user)
     socketio.emit(
         "joined_room",
         {"message": "Joined room", "room": serialization(room)},
-        to=[room.participantIds()],
+        to=room.participantIds(),
     )
-
-
 
 
 @socketio.on("kick")
 def onKick(payload):
-    room:Room = storage.rooms.get(payload["room_id"])
+    room: Room = storage.rooms.get(payload["room_id"])
 
     room.kick(payload["owner_id"], payload["kick_id"])
-
-    print(room.participantIds())
-
     socketio.emit(
         "kicked",
         {"message": "User was kicked", "room": serialization(room)},
-        to=[room.participantIds()],
+        to=room.participantIds(),
     )
 
 
 @socketio.on("add_bot")
 def add_bot(payload):
-    room:Room = storage.rooms.get(payload["room_id"])
+    room: Room = storage.rooms.get(payload["room_id"])
 
     if room is None or room.isFull():
         socketio.emit(
@@ -192,7 +183,7 @@ def add_bot(payload):
     socketio.emit(
         "added_bot",
         {"message": "bot added into room", "room": serialization(room)},
-        to=request.sid,
+        to=room.participantIds(),
     )
 
 
@@ -214,7 +205,7 @@ def changeStatus(payload):
     socketio.emit(
         "status_changed",
         {"room": serialization(room)},
-        to=[room.participantIds()],
+        to=room.participantIds(),
     )
 
 
@@ -226,7 +217,7 @@ def changeGameType(payload):
     socketio.emit(
         "game_type_changed",
         {"game_type": gameType, "room_id": room.id},
-        to=[room.participantIds()],
+        to=room.participantIds(),
     )
 
 
@@ -251,7 +242,7 @@ def leaveRoom(payload):
     socketio.emit(
         "leaved_room",
         {"message": "leaved room", "room": serialization(room)},
-        to=[room.participantIds(), request.sid],
+        to=room.participantIds(),
     )
 
 
@@ -268,6 +259,8 @@ def startGame(payload):
             to=request.sid,
         )
 
+    print(vars(room))
+
     room.gameStart(gameType)
 
     socketio.emit(
@@ -276,7 +269,7 @@ def startGame(payload):
             "message": "Game start !!! Come on",
             "game": serializationFilter(room.game, ["game"]),
         },
-        to=[room.participantIds()],
+        to=room.participantIds(),
     )
 
 
@@ -305,7 +298,7 @@ def move(payload):
             "message": "Moved",
             "game": serializationFilter(room.game, ["game"]),
         },
-        to=[room.participantIds()],
+        to=room.participantIds(),
     )
 
 
@@ -316,7 +309,7 @@ def botMoveSumoku(payload):
         socketio.emit(
             "bot_move_failed",
             {"message": "Some error happend please try again !"},
-            to=[room.participantIds()],
+            to=room.participantIds(),
         )
 
     game = room.game
@@ -340,7 +333,7 @@ def botMoveSumoku(payload):
             "message": "Bot moved",
             "game": serializationFilter(game, ["game"]),
         },
-        to=[room.participantIds()],
+        to=room.participantIds(),
     )
 
 

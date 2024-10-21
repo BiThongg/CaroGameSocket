@@ -48,3 +48,8 @@ class Storage:
         self.addRoom(room)
         return room
 
+    def getRoomByUserId(self, userId: str) -> Room | None:
+        for room in self.rooms.values():
+            if room.owner.info.id == userId:
+                return room
+        return None

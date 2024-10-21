@@ -12,7 +12,6 @@ from player.Player import Player
 from enum import Enum
 from util.cell import Cell
 
-
 class UserStatus(Enum):
     NOT_READY = "NOT_READY"
     READY = "READY"
@@ -157,10 +156,11 @@ class Room:
         )
 
     def participantIds(self) -> List[str]:
-        ids = [watcher.sid for watcher in self.guests]
-        ids.append(self.owner.info.sid)
+        sids = [watcher.sid for watcher in self.guests]
+        sids.append(self.owner.info.sid)
         if self.competitor is not None:
-            ids.append(self.competitor.info.sid)
+            sids.append(self.competitor.info.sid)
+        return sids
 
     def addBot(self) -> None:
         self.competitor = Participant(User("BOT_" + str(uuid.uuid4()), None))
