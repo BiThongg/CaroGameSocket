@@ -301,7 +301,6 @@ def botMoveSumoku(payload):
         to=room.participantIds(),
     )
 
-
 if __name__ == "__main__":
     try:
         socketio.run(app, debug=False)

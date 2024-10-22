@@ -151,21 +151,12 @@ class Room:
             else UserStatus.READY
         )
 
-<<<<<<< HEAD
-    def participantIds(self) -> List[str]:
-        sids = [watcher.sid for watcher in self.guests]
-        sids.append(self.owner.info.sid)
-        if self.competitor is not None:
-            sids.append(self.competitor.info.sid)
-        return sids
-=======
     def participantIds(self) -> list[str]:
         ids = [watcher.sid for watcher in self.guests]
         ids.append(self.owner.info.sid)
         if self.competitor is not None:
             ids.append(self.competitor.info.sid)
         return [x for x in ids if x is not None]
->>>>>>> fe0c95a5b9872eb35d70ee527c1527e4f971d50b
 
     def addBot(self) -> None:
         self.competitor = Participant(User("BOT_" + str(uuid.uuid4()), None))
