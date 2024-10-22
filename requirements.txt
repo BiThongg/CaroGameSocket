@@ -4,3 +4,4 @@ flask-socketio
 PyJWT
 numpy
 rich
+jsonpickle
