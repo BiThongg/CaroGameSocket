@@ -1,5 +1,4 @@
 from game.Game import Game
-from player.Player import Player
 from util.cell import Cell
 from random import randint
 from util.point import Point
@@ -23,7 +22,7 @@ class CasualGame(Game):
         for dx, dy in directions:
             count = 1
             movedPoints: list[Point] = []
-            # check chiều dương
+
             i, j = x + dx, y + dy
             while 0 <= i < len(self.board) and 0 <= j < len(self.board[0]) and self.board[i][j] == currentCell:
                 movedPoints.append(Point(i, j))

@@ -242,14 +242,13 @@ def startGame(user: User, payload: dict):
         to=room.participantIds(),
     )
 
+
 @socketio.on("move")
 @user_infomation_filter
 def move(user: User, payload: dict):
-    # find
     room: Room = storage.rooms.get(payload["room_id"])
     game: Game = room.game
 
-    # valid
     if not game.checkPlayer(user.id):
         socketio.emit(
             "move_failed",
@@ -257,28 +256,30 @@ def move(user: User, payload: dict):
             to=request.sid,
         )
 
-    # handle move
     point: Point = Point(x=payload["point"]["x"], y=payload["point"]["y"])
     game.getPlayer(user.id).move(point)
-    
+
     gameEndInfo: dict = game.getGameEndInfo()
-    
-    if gameEndInfo is not None:
-        game.isEnd = True
-        socketio.emit("ended_game", {
-            "message": "Ended Game",
-            "game": serializationFilter(room.game, ["game"]),
-            "winner": serializationFilter(gameEndInfo, ['game'])
-        }, to=room.participantIds())
-        return
 
     game.updateTurn()
-    socketio.emit("moved", {
-            "message": "Moved",
-            "game": serializationFilter(room.game, ["game"])
-        },
-        to=room.participantIds()
+    socketio.emit(
+        "moved",
+        {"message": "Moved", "game": serializationFilter(room.game, ["game"])},
+        to=room.participantIds(),
     )
+
+    if gameEndInfo is not None:
+        game.isEnd = True
+        socketio.emit(
+            "ended_game",
+            {
+                "message": "Ended Game",
+                "game": serializationFilter(room.game, ["game"]),
+                "winner": serializationFilter(gameEndInfo, ["game"]),
+            },
+            to=room.participantIds(),
+        )
+
 
 @socketio.on("bot_move")
 def botMoveSumoku(payload):
