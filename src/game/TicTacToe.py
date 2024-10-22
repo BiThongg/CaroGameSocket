@@ -2,37 +2,62 @@ from game.Game import Game
 from player.Player import Player
 from util.cell import Cell
 from random import randint
-
+from util.point import Point
 
 # TicTacToe game is who get 3 in a row will win
 class TicTacToe(Game):
+    @staticmethod
+    def getClassName() -> str:
+        return TicTacToe.__name__
 
     def __init__(self):
         super().__init__(3)
 
-    def getWinnerSymbol(self) -> Cell:
-        # caro 3x3, 3 for win
-        size = self.board.__len__()
-        # check win tictactoe 
-        for i in range(size):
-            # check horizontal
-            if self.board[i][0] == self.board[i][1] == self.board[i][2] != Cell.NONE:
-                return self.board[i][0]
-            # check vertical
-            if self.board[0][i] == self.board[1][i] == self.board[2][i] != Cell.NONE:
-                return self.board[0][i]
-        # check diagonal
-        if self.board[0][0] == self.board[1][1] == self.board[2][2] != Cell.NONE:
-            return self.board[0][0]
-        if self.board[0][2] == self.board[1][1] == self.board[2][0] != Cell.NONE:
-            return self.board[0][2]
-        return Cell.NONE
+    def isEndGame(self) -> dict | None:
+        currentCell: Cell = self.turn
+        x = self.latestPoint.y
+        y = self.latestPoint.x
 
-    def getGameEndInfo(self) -> Player | None:
-        # symbol = self.getWinnerSymbol()
-        # for player in self.players:
-        #     if player.symbol == symbol:
-        #         return player
+        directions = [
+            (1, 0),   # ngang
+            (0, 1),   # dọc
+            (1, 1),   # chéo chính
+            (1, -1)   # chèo phụ
+        ]
+        
+        for dx, dy in directions:
+            count = 1
+            movedPoints: list[Point] = []
+            # check chiều dương
+            i, j = x + dx, y + dy
+            while 0 <= i < len(self.board) and 0 <= j < len(self.board[0]) and self.board[i][j] == currentCell:
+                movedPoints.append(Point(j, i))
+                count += 1
+                i += dx
+                j += dy
+                
+            # check chiều âm
+            i, j = x - dx, y - dy
+            while 0 <= i < len(self.board) and 0 <= j < len(self.board[0]) and self.board[i][j] == currentCell:
+                movedPoints.append(Point(j, i))
+                count += 1
+                i -= dx
+                j -= dy
+                
+            if count >= 3:
+                movedPoints.append(self.latestPoint)
+                return {
+                    "symbol": currentCell,
+                    "points": movedPoints
+                }
+        return None
+
+    def getGameEndInfo(self) -> dict | None:
+        result: dict = self.isEndGame()
+        if result is not None:
+            for player in self.players:
+                if player.symbol == result['symbol']:
+                    return result
         return None
 
     def updateTurn(self) -> None:

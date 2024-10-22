@@ -233,13 +233,10 @@ def startGame(user: User, payload: dict):
 
     room.gameStart(gameType)
 
-    socketio.emit(
-        "started_game",
-        {
+    socketio.emit("started_game", {
             "message": "Game start !!! Come on",
             "game": serializationFilter(room.game, ["game"]),
-        },
-        to=room.participantIds(),
+        }, to=room.participantIds(),
     )
 
 @socketio.on("move")
@@ -247,15 +244,18 @@ def startGame(user: User, payload: dict):
 def move(user: User, payload: dict):
     # find
     room: Room = storage.rooms.get(payload["room_id"])
-    game: Game = room.game
-
+    
     # valid
-    if not game.checkPlayer(user.id):
+    if room is None or room.game is None:
         socketio.emit(
             "move_failed",
-            {"message": "Some error happend please try again !"},
+            {"message": "Not found room or game !"},
             to=request.sid,
         )
+        
+    game: Game = room.game
+    if not game.checkPlayer(user.id):
+        socketio.emit("move_failed", {"message": "You are not permission to move !"}, to=request.sid)
 
     # handle move
     point: Point = Point(x=payload["point"]["x"], y=payload["point"]["y"])
@@ -267,9 +267,8 @@ def move(user: User, payload: dict):
     if gameEndInfo is not None:
         game.isEnd = True
         socketio.emit("ended_game", {
-            "message": "Ended Game",
-            "game": serializationFilter(room.game, ["game"]),
-            "winner": serializationFilter(gameEndInfo, ['game'])
+            "message": f"{user.name} ({gameEndInfo['symbol']}) win !",
+            "winner": serialization(gameEndInfo)
         }, to=room.participantIds())
         return
 
@@ -297,25 +296,19 @@ def botMoveSumoku(payload: dict):
     player: AIPlayer = game.getBot()
 
     if not player:
-        socketio.emit("bot_move_failed", {"message": "Some error happend please try again !"},
-            to=room.participantIds())
+        socketio.emit("bot_move_failed", {"message": "Some error happend please try again !"}, to=room.participantIds())
         return
 
-    if isinstance(game, CasualGame):
-        player.makeMoveSumoku()
-    else:
-        player.makeMoveTictactoe()
-        
     player.makeMove()
-     # if win ? end game
+
+    # if win ? end game
     gameEndInfo: dict = game.getGameEndInfo()
-    
+
     if gameEndInfo is not None:
         game.isEnd = True
         socketio.emit("ended_game", {
-            "message": "Ended Game",
-            "game": serializationFilter(room.game, ["game"]),
-            "winner": serializationFilter(gameEndInfo, ['game'])
+            "message": f"BOT ({gameEndInfo['symbol']}) win !",
+            "winner": serialization(gameEndInfo)
         }, to=room.participantIds())
         return
 

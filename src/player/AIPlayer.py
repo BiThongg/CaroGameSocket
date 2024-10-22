@@ -4,7 +4,8 @@ from model.SumokuModel import CaroModel
 from player.Player import Player
 from util.point import Point
 from util.cell import Cell
-from game import CasualGame, TicTacToe
+from game.CasualGame import *
+from game.TicTacToe import *
 from typing import Type, Callable, Dict
 
 class AIPlayer(Player):
@@ -15,10 +16,10 @@ class AIPlayer(Player):
     
     def makeMoveFactory(self) -> Callable[[], str]:
         makeMoveFactory: Dict[Type, Callable[[], str]] = {
-            CasualGame: self.makeMoveSumoku,
-            TicTacToe: self.makeMoveTictactoe
+            CasualGame.__name__: self.makeMoveSumoku,
+            TicTacToe.__name__: self.makeMoveTictactoe
         }
-        return makeMoveFactory[type(self.game)]
+        return makeMoveFactory[self.game.__class__.__name__]
     
     def makeMove(self):
         self.makeMoveFactory()()

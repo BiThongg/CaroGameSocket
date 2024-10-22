@@ -24,7 +24,7 @@ class GameType(Enum):
 class GameFactory:
     gameDict: Dict[Enum, Type] = {
         GameType.TIC_TAC_TOE: TicTacToe,
-        GameType.CASUAL: CasualGame,
+        GameType.CASUAL: CasualGame
     }
 
     @staticmethod

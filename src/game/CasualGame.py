@@ -4,7 +4,11 @@ from util.cell import Cell
 from random import randint
 from util.point import Point
 
-class CasualGame(Game):
+class CasualGame(Game):   
+    @staticmethod
+    def getClassName() -> str:
+        return CasualGame.__name__
+    
     def __init__(self, size: int = 14):
         super().__init__(size)
 
@@ -26,7 +30,7 @@ class CasualGame(Game):
             # check chiều dương
             i, j = x + dx, y + dy
             while 0 <= i < len(self.board) and 0 <= j < len(self.board[0]) and self.board[i][j] == currentCell:
-                movedPoints.append(Point(i, j))
+                movedPoints.append(Point(j, i))
                 count += 1
                 i += dx
                 j += dy
@@ -34,12 +38,13 @@ class CasualGame(Game):
             # check chiều âm
             i, j = x - dx, y - dy
             while 0 <= i < len(self.board) and 0 <= j < len(self.board[0]) and self.board[i][j] == currentCell:
-                movedPoints.append(Point(i, j))
+                movedPoints.append(Point(j, i))
                 count += 1
                 i -= dx
                 j -= dy
                 
-            if count >= 5: # 5 là caro
+            if count >= 5:
+                movedPoints.append(self.latestPoint)
                 return {
                     "symbol": currentCell,
                     "points": movedPoints
@@ -51,9 +56,7 @@ class CasualGame(Game):
         if result is not None:
             for player in self.players:
                 if player.symbol == result['symbol']:
-                    result['player'] = player
-                    del result['symbol']
-                    return result 
+                    return result
         return None
 
     def updateTurn(self) -> None:
