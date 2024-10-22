@@ -64,7 +64,6 @@ class CaroModel:
 
     def winner(self, board):
         _size = board.__len__()
-
         for i in range(_size):
             for j in range(_size):
                 if board[i][j] != Cell.NONE:
@@ -207,4 +206,3 @@ class CaroModel:
             beta = min(beta, minv)
 
         return (minv, qx, qy)
-

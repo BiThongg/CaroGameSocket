@@ -2,7 +2,7 @@ from enum import Enum
 import random
 import string
 
-def serializationFilter(obj, exclude = []):
+def serializationFilter(obj, exclude: list[str] = []):
     def should_exclude(key):
         return any(ex in key for ex in exclude)
     if isinstance(obj, Enum):
