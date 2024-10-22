@@ -258,7 +258,10 @@ def move(user: User, payload: dict):
 
     player: Player = game.getPlayer(user.id)
 
-    player.move(Point(**payload["point"]))
+    pointTmp = payload["point"]
+    point = Point(x=pointTmp["x"], y=pointTmp["y"])
+
+    player.move(point)
     socketio.emit(
         "moved",
         {
