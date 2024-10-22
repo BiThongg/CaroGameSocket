@@ -12,13 +12,16 @@ from player.Player import Player
 from enum import Enum
 from util.cell import Cell
 
+
 class UserStatus(Enum):
     NOT_READY = "NOT_READY"
     READY = "READY"
 
+
 class GameType(Enum):
     TIC_TAC_TOE = "TIC_TAC_TOE"
     CASUAL = "CASUAL"
+
 
 class GameFactory:
     gameDict = {
@@ -29,6 +32,7 @@ class GameFactory:
     @staticmethod
     def construct(gameType: GameType) -> Game:
         return GameFactory.gameDict[gameType]()
+
 
 class Participant:
     def __init__(self, user: User):
@@ -47,18 +51,24 @@ class Room:
         self.guests: List[User] = []
         self.game: Game = None
 
-    def kick(self, owner_id: str, kickId: str):
+    def kick(self, owner_id: str, kickId: str) -> str:
         if owner_id != self.owner.info.id:
             raise Exception("You are not owner")
 
+        sid = None
+
         if self.competitor is not None and self.competitor.info.id == kickId:
+            sid = self.competitor.info.sid
             self.competitor = None
 
         else:
             for user in self.guests:
                 if user.id == kickId:
+                    sid = user.sid
                     self.guests.remove(user)
                     break
+
+        return sid
 
     def addGuest(self, user: User):
         self.guests.append(user)

@@ -22,6 +22,8 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 def connect(user: User, payload: dict):
     if user is not None:
         user.sid = request.sid
+    else:
+        emit("error", {"message": "User not found"}, to=request.sid)
 
 
 def beforeReconnect(id: str):
@@ -135,12 +137,12 @@ def joinRoom(user: User, payload: dict):
 def onKick(user: User, payload: dict):
     room: Room = storage.rooms.get(payload["room_id"])
 
-    room.kick(user.id, payload["kick_id"])
+    kickSID = room.kick(user.id, payload["kick_id"])
 
     socketio.emit(
         "kicked",
         {"message": "User was kicked", "room": serialization(room)},
-        to=room.participantIds(),
+        to=room.participantIds() + [kickSID],
     )
 
 
@@ -212,7 +214,7 @@ def leaveRoom(user: User, payload: dict):
     socketio.emit(
         "leaved_room",
         {"message": "leaved room", "room": serialization(room)},
-        to=[room.participantIds(), user.sid],
+        to=room.participantIds() + [user.sid],
     )
 
 
@@ -300,6 +302,7 @@ def botMoveSumoku(payload):
         },
         to=room.participantIds(),
     )
+
 
 if __name__ == "__main__":
     try:
