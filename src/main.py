@@ -247,12 +247,20 @@ def startGame(user: User, payload: dict):
 @user_infomation_filter
 def move(user: User, payload: dict):
     room: Room = storage.rooms.get(payload["room_id"])
-    game: Game = room.game
 
+    # valid
+    if room is None or room.game is None:
+        socketio.emit(
+            "move_failed",
+            {"message": "Not found room or game !"},
+            to=request.sid,
+        )
+
+    game: Game = room.game
     if not game.checkPlayer(user.id):
         socketio.emit(
             "move_failed",
-            {"message": "Some error happend please try again !"},
+            {"message": "You are not permission to move !"},
             to=request.sid,
         )
 
@@ -273,17 +281,18 @@ def move(user: User, payload: dict):
         socketio.emit(
             "ended_game",
             {
-                "message": "Ended Game",
-                "game": serializationFilter(room.game, ["game"]),
-                "winner": serializationFilter(gameEndInfo, ["game"]),
+                "message": f"{user.name} ({serialization(gameEndInfo['symbol'])}) wins !",
+                "winner": serialization(gameEndInfo),
             },
             to=room.participantIds(),
         )
+        return
 
 
 @socketio.on("bot_move")
-def botMoveSumoku(payload):
-    room = storage.getRoom(payload["room_id"])
+def botMoveSumoku(payload: dict):
+    room: Room = storage.getRoom(payload["room_id"])
+
     if (not room) or (not room.game):
         socketio.emit(
             "bot_move_failed",
@@ -300,18 +309,30 @@ def botMoveSumoku(payload):
             {"message": "Some error happend please try again !"},
             to=room.participantIds(),
         )
+        return
 
-    if game.board.__len__() == 3:
-        player.makeMoveTictactoe()
-    else:
-        player.makeMoveSumoku()
+    player.makeMove()
 
+    # if win ? end game
+    gameEndInfo: dict = game.getGameEndInfo()
+
+    if gameEndInfo is not None:
+        game.isEnd = True
+        socketio.emit(
+            "ended_game",
+            {
+                "message": f"BOT ({gameEndInfo['symbol']}) win !",
+                "winner": serialization(gameEndInfo),
+            },
+            to=room.participantIds(),
+        )
+        return
+
+    # else continue next turn
+    game.updateTurn()
     socketio.emit(
         "moved",
-        {
-            "message": "Bot moved",
-            "game": serializationFilter(game, ["game"]),
-        },
+        {"message": "Bot moved", "game": serializationFilter(game, ["game"])},
         to=room.participantIds(),
     )
 

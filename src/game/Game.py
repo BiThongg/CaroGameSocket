@@ -109,3 +109,8 @@ class Game(ABC):
     @abstractmethod
     def randomSeed(self) -> None:
         pass
+    
+    @staticmethod
+    @abstractmethod
+    def getClassName() -> str:
+        pass

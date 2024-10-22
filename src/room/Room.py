@@ -11,28 +11,25 @@ from player.PersonPlayer import PersonPlayer
 from player.Player import Player
 from enum import Enum
 from util.cell import Cell
-
+from typing import Type, Callable, Dict
 
 class UserStatus(Enum):
     NOT_READY = "NOT_READY"
     READY = "READY"
 
-
 class GameType(Enum):
     TIC_TAC_TOE = "TIC_TAC_TOE"
     CASUAL = "CASUAL"
 
-
 class GameFactory:
-    gameDict = {
+    gameDict: Dict[Enum, Type] = {
         GameType.TIC_TAC_TOE: TicTacToe,
-        GameType.CASUAL: CasualGame,
+        GameType.CASUAL: CasualGame
     }
 
     @staticmethod
     def construct(gameType: GameType) -> Game:
         return GameFactory.gameDict[gameType]()
-
 
 class Participant:
     def __init__(self, user: User):
@@ -165,7 +162,7 @@ class Room:
         ids.append(self.owner.info.sid)
         if self.competitor is not None:
             ids.append(self.competitor.info.sid)
-        return [x for x in ids if x is not None]
+        return [x for x in ids if x is not None and not x.startswith('BOT_')]
 
     def addBot(self) -> None:
         self.competitor = Participant(User("BOT_" + str(uuid.uuid4()), None))
