@@ -26,18 +26,18 @@ class CasualGame(Game):
             # check chiều dương
             i, j = x + dx, y + dy
             while 0 <= i < len(self.board) and 0 <= j < len(self.board[0]) and self.board[i][j] == currentCell:
+                movedPoints.append(Point(i, j))
                 count += 1
                 i += dx
                 j += dy
-                movedPoints.append(Point(i, j))
                 
             # check chiều âm
             i, j = x - dx, y - dy
             while 0 <= i < len(self.board) and 0 <= j < len(self.board[0]) and self.board[i][j] == currentCell:
+                movedPoints.append(Point(i, j))
                 count += 1
                 i -= dx
                 j -= dy
-                movedPoints.append(Point(i, j))
                 
             if count >= 5: # 5 là caro
                 return {
