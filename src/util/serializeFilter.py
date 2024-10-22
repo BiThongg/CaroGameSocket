@@ -20,12 +20,10 @@ def serializationFilter(obj, exclude: list[str] = []):
     else:
         return obj
 
-
 def name_generation(length):
     characters = string.ascii_letters
     random_string = "".join(random.choices(characters, k=length))
     return random_string
-
 
 def serialization(obj):
     if isinstance(obj, Enum):

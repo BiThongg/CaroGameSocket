@@ -60,14 +60,13 @@ class Room:
         if self.competitor is not None and self.competitor.info.id == kickId:
             sid = self.competitor.info.sid
             self.competitor = None
-
+            
         else:
             for user in self.guests:
                 if user.id == kickId:
                     sid = user.sid
                     self.guests.remove(user)
                     break
-
         return sid
 
     def addGuest(self, user: User):

@@ -2,64 +2,58 @@ from game.Game import Game
 from player.Player import Player
 from util.cell import Cell
 from random import randint
+from util.point import Point
 
 class CasualGame(Game):
     def __init__(self, size: int = 14):
         super().__init__(size)
 
-    def getWinnerSymbol(self) -> Cell | None:
-        # caro _sizex15, 5 for win
-        size = self.board.__len__()
+    def isEndGame(self) -> dict | None:
+        currentCell: Cell = self.turn
+        x = self.latestPoint.y
+        y = self.latestPoint.x
 
-        for i in range(size):
-            for j in range(size):
-                if self.board[i][j] != Cell.NONE:
-                    # check horizontal
-                    if j < size - 4:
-                        if (
-                            self.board[i][j]
-                            == self.board[i][j + 1]
-                            == self.board[i][j + 2]
-                            == self.board[i][j + 3]
-                            == self.board[i][j + 4]
-                        ):
-                            return self.board[i][j]
-                    # check vertical
-                    if i < size - 4:
-                        if (
-                            self.board[i][j]
-                            == self.board[i + 1][j]
-                            == self.board[i + 2][j]
-                            == self.board[i + 3][j]
-                            == self.board[i + 4][j]
-                        ):
-                            return self.board[i][j]
-                    # check diagonal
-                    if i < size - 4 and j < size - 4:
-                        if (
-                            self.board[i][j]
-                            == self.board[i + 1][j + 1]
-                            == self.board[i + 2][j + 2]
-                            == self.board[i + 3][j + 3]
-                            == self.board[i + 4][j + 4]
-                        ):
-                            return self.board[i][j]
-                    if i < size - 4 and j > 4:
-                        if (
-                            self.board[i][j]
-                            == self.board[i + 1][j - 1]
-                            == self.board[i + 2][j - 2]
-                            == self.board[i + 3][j - 3]
-                            == self.board[i + 4][j - 4]
-                        ):
-                            return self.board[i][j]
+        directions = [
+            (1, 0),   # ngang
+            (0, 1),   # dọc
+            (1, 1),   # chéo chính
+            (1, -1)   # chèo phụ
+        ]
+        
+        for dx, dy in directions:
+            count = 1
+            movedPoints: list[Point] = []
+            # check chiều dương
+            i, j = x + dx, y + dy
+            while 0 <= i < len(self.board) and 0 <= j < len(self.board[0]) and self.board[i][j] == currentCell:
+                count += 1
+                i += dx
+                j += dy
+                movedPoints.append(Point(i, j))
+                
+            # check chiều âm
+            i, j = x - dx, y - dy
+            while 0 <= i < len(self.board) and 0 <= j < len(self.board[0]) and self.board[i][j] == currentCell:
+                count += 1
+                i -= dx
+                j -= dy
+                movedPoints.append(Point(i, j))
+                
+            if count >= 5: # 5 là caro
+                return {
+                    "symbol": currentCell,
+                    "points": movedPoints
+                }
         return None
-
-    def getWinner(self) -> Player | None:
-        symbol = self.getWinnerSymbol()
-        for player in self.players:
-            if player.symbol == symbol:
-                return player
+        
+    def getGameEndInfo(self) -> dict | None:
+        result: dict = self.isEndGame()
+        if result is not None:
+            for player in self.players:
+                if player.symbol == result['symbol']:
+                    result['player'] = player
+                    del result['symbol']
+                    return result 
         return None
 
     def updateTurn(self) -> None:

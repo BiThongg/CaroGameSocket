@@ -17,6 +17,8 @@ class Game(ABC):
     def __init__(self, size: int):
         self.turn: Cell = Cell.NONE
         self.players: List[Player] = []
+        self.latestPoint: Point = None
+        self.isEnd: bool = False
         self.board: List[List[Cell]] = [
             [Cell.NONE for _ in range(size)] for _ in range(size)
         ]
@@ -35,9 +37,8 @@ class Game(ABC):
 
         if self.board[point.y][point.x] != Cell.NONE:
             raise Exception("Cell is not empty")
-
+        self.latestPoint = point
         self.board[point.y][point.x] = player.symbol
-        self.updateTurn()
         return
 
     def checkPlayer(self, user_id: str) -> bool: 
@@ -98,7 +99,7 @@ class Game(ABC):
         tmp = self
 
     @abstractmethod
-    def getWinner(self) -> Player:
+    def getGameEndInfo(self) -> Player:
         pass
 
     @abstractmethod
