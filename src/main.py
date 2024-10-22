@@ -261,7 +261,6 @@ def move(user: User, payload: dict):
     point: Point = Point(x=payload["point"]["x"], y=payload["point"]["y"])
     game.getPlayer(user.id).move(point)
     
-    # if win ? end game
     gameEndInfo: dict = game.getGameEndInfo()
     
     if gameEndInfo is not None:
@@ -273,7 +272,6 @@ def move(user: User, payload: dict):
         }, to=room.participantIds())
         return
 
-    # else continue next turn
     game.updateTurn()
     socketio.emit("moved", {
             "message": "Moved",
