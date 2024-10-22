@@ -283,37 +283,48 @@ def move(user: User, payload: dict):
     )
 
 @socketio.on("bot_move")
-def botMoveSumoku(payload):
-    room = storage.getRoom(payload["room_id"])
+def botMoveSumoku(payload: dict):
+    room: Room = storage.getRoom(payload["room_id"])
+    
     if (not room) or (not room.game):
         socketio.emit(
             "bot_move_failed",
             {"message": "Some error happend please try again !"},
-            to=room.participantIds(),
+            to=room.participantIds()
         )
 
     game: Game = room.game
     player: AIPlayer = game.getBot()
 
     if not player:
-        socketio.emit(
-            "bot_move_failed",
-            {"message": "Some error happend please try again !"},
-            to=room.participantIds(),
-        )
+        socketio.emit("bot_move_failed", {"message": "Some error happend please try again !"},
+            to=room.participantIds())
+        return
 
-    if game.board.__len__() == 3:
-        player.makeMoveTictactoe()
-    else:
+    if isinstance(game, CasualGame):
         player.makeMoveSumoku()
+    else:
+        player.makeMoveTictactoe()
+        
+    player.makeMove()
+     # if win ? end game
+    gameEndInfo: dict = game.getGameEndInfo()
+    
+    if gameEndInfo is not None:
+        game.isEnd = True
+        socketio.emit("ended_game", {
+            "message": "Ended Game",
+            "game": serializationFilter(room.game, ["game"]),
+            "winner": serializationFilter(gameEndInfo, ['game'])
+        }, to=room.participantIds())
+        return
 
-    socketio.emit(
-        "moved",
-        {
+    # else continue next turn
+    game.updateTurn()
+    socketio.emit("moved", {
             "message": "Bot moved",
-            "game": serializationFilter(game, ["game"]),
-        },
-        to=room.participantIds(),
+            "game": serializationFilter(game, ["game"])
+        }, to=room.participantIds()
     )
 
 
