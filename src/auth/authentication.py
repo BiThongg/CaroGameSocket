@@ -1,8 +1,6 @@
-from flask_socketio import Namespace, emit
-from flask import Flask, session, request
+from database.data import storage
+from flask import request
 import jwt
-import json
-from database.data import *
 from datetime import datetime, timedelta
 from functools import wraps
 

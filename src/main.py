@@ -137,12 +137,13 @@ def joinRoom(user: User, payload: dict):
 def onKick(user: User, payload: dict):
     room: Room = storage.rooms.get(payload["room_id"])
 
-    kickSID = room.kick(user.id, payload["kick_id"])
+    receivers = room.participantIds()
+    room.kick(user.id, payload["kick_id"])
 
     socketio.emit(
         "kicked",
         {"message": "User was kicked", "room": serialization(room)},
-        to=room.participantIds() + [kickSID],
+        to=receivers,
     )
 
 
