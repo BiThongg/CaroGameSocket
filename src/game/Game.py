@@ -59,8 +59,6 @@ class Game(ABC):
                 return player
         return None
 
-
-
     def addPlayer(self: Game, player: Player) -> None:
         player.game = self
         self.players.append(player)

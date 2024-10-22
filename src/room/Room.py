@@ -17,11 +17,9 @@ class UserStatus(Enum):
     NOT_READY = "NOT_READY"
     READY = "READY"
 
-
 class GameType(Enum):
     TIC_TAC_TOE = "TIC_TAC_TOE"
     CASUAL = "CASUAL"
-
 
 class GameFactory:
     gameDict = {
@@ -32,7 +30,6 @@ class GameFactory:
     @staticmethod
     def construct(gameType: GameType) -> Game:
         return GameFactory.gameDict[gameType]()
-
 
 class Participant:
     def __init__(self, user: User):
@@ -112,7 +109,6 @@ class Room:
                 if user.id == userId:
                     userTmp = user
                     break
-
             if userTmp is not None:
                 self.guests.remove(userTmp)
 
@@ -156,12 +152,12 @@ class Room:
             else UserStatus.READY
         )
 
-    def participantIds(self) -> List[str]:
+    def participantIds(self) -> list[str]:
         ids = [watcher.sid for watcher in self.guests]
         ids.append(self.owner.info.sid)
         if self.competitor is not None:
             ids.append(self.competitor.info.sid)
-        return ids
+        return [x for x in ids if x is not None]
 
     def addBot(self) -> None:
         self.competitor = Participant(User("BOT_" + str(uuid.uuid4()), None))
