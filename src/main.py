@@ -12,7 +12,6 @@ from database.data import storage
 from auth.authentication import user_infomation_filter
 
 app = Flask(__name__)
-app.config["SECRET_KEY"] = "CARO_GAME_SUPER_VIP_PRO_MAX"
 CORS(app, resources={r"/*": {"origins": "*"}})
 socketio = SocketIO(app, cors_allowed_origins="*")
 
