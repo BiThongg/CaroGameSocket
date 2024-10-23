@@ -18,7 +18,7 @@ class AIPlayer(Player):
     def makeMoveFactory(self) -> Callable[[], str]:
         makeMoveFactory: Dict[Type, Callable[[], str]] = {
             CasualGame.__name__: self.makeMoveSumoku,
-            TicTacToe.__name__: self.makeMoveTictactoe,
+            TicTacToe.__name__: self.makeMoveTictactoe
         }
         return makeMoveFactory[self.game.__class__.__name__]
 

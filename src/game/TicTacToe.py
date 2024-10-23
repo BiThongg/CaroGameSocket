@@ -48,7 +48,7 @@ class TicTacToe(Game):
                 movedPoints.append(self.latestPoint)
                 return {
                     "symbol": currentCell,
-                    "points": movedPoints
+                    "points": movedPoints,
                 }
         return None
 

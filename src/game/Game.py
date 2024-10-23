@@ -22,6 +22,13 @@ class Game(ABC):
         self.board: List[List[Cell]] = [
             [Cell.NONE for _ in range(size)] for _ in range(size)
         ]
+        
+    def isFullBoard(self) -> bool:
+        for row in self.board:
+            for cell in row:
+                if cell == Cell.NONE:
+                    return False
+        return True
 
     def getCurrentSymbol(self) -> Cell:
         return self.turn
