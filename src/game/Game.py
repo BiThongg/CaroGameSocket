@@ -25,6 +25,8 @@ class Game(ABC):
         self._scheduler: BackgroundScheduler = BackgroundScheduler()
         self.board: List[List[Cell]] = [[Cell.NONE for _ in range(size)] for _ in range(size)]
         
+        
+    # TIMEOUT MODULE
     def startGame(self):
         print("Game started !")
         self.startTimer()
@@ -53,8 +55,9 @@ class Game(ABC):
         try:
             self._scheduler.modify_job('player_turn_timer', trigger=IntervalTrigger(seconds=self.timeLeft))
         except Exception as e:
-            print(f"Failed to modify job {'player_turn_timer'}: {e}")
-            
+            print(f"Failed to modify job {'player_turn_timer'}: {e}")        
+    # TIMEOUT MODULE
+    
     def isFullBoard(self) -> bool:
         for row in self.board:
             for cell in row:
