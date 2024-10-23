@@ -54,9 +54,6 @@ class Game(ABC):
             self._scheduler.modify_job('player_turn_timer', trigger=IntervalTrigger(seconds=self.timeLeft))
         except Exception as e:
             print(f"Failed to modify job {'player_turn_timer'}: {e}")
-        # self._scheduler.reschedule_job('player_turn_timer')
-        # if not self.isEnd:
-        #     self.startTimer()
             
     def isFullBoard(self) -> bool:
         for row in self.board:
