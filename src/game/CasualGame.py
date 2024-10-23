@@ -63,6 +63,7 @@ class CasualGame(Game):
             self.turn = Cell.O
         else:
             self.turn = Cell.X
+        self.switchPlayer()
         return
 
     def randomSeed(self) -> None:

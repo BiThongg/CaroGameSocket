@@ -1,28 +1,64 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 from abc import ABC, abstractmethod
-
-from numpy import info
+from apscheduler.schedulers.background import BackgroundScheduler
 from util.point import Point
 from typing import List
 from rich.console import Console
 from rich.table import Table
-from enum import Enum
 from util.cell import Cell
+from apscheduler.triggers.interval import IntervalTrigger
+from config import socketio
+# from room import Room
 
 if TYPE_CHECKING:
     from src.player.Player import Player
-
+    
 class Game(ABC):
     def __init__(self, size: int):
-        self.turn: Cell = Cell.NONE
-        self.players: List[Player] = []
-        self.latestPoint: Point = None
+        self.room = None
+        self.timeLeft: int = 30
         self.isEnd: bool = False
-        self.board: List[List[Cell]] = [
-            [Cell.NONE for _ in range(size)] for _ in range(size)
-        ]
+        self.turn: Cell = Cell.X
+        self.latestPoint: Point = None
+        self.players: List[Player] = []
+        self._scheduler: BackgroundScheduler = BackgroundScheduler()
+        self.board: List[List[Cell]] = [[Cell.NONE for _ in range(size)] for _ in range(size)]
         
+    def startGame(self):
+        print("Game started !")
+        self.startTimer()
+
+    def startTimer(self):
+        if not self.isEnd:
+            print(f">> Player {self.getCurrentPlayerTurn().user.name}'s turn. Time left: {self.timeLeft} seconds !")
+            self._scheduler.add_job(self.timeout, 'interval', seconds=self.timeLeft, id='player_turn_timer', replace_existing=True)
+            self._scheduler.start()
+            
+    def timeout(self):
+        self._scheduler.remove_all_jobs()
+        print(f"Player {self.getCurrentPlayerTurn} has run out of time!")
+        self.playerLoses(self.getCurrentPlayerTurn())
+
+    def playerLoses(self, loser: Player):
+        restPlayers = [player for player in self.players if player != loser]
+        
+        self.room.game = None
+        
+        socketio.emit("ended_game", {
+            "message": f"{restPlayers[0].user.name} ({restPlayers[0].symbol}) wins !"
+        }, to=self.room.participantIds())
+        print(f"Player {restPlayers[0]} loses the game!")
+            
+    def switchPlayer(self):
+        try:
+            self._scheduler.modify_job('player_turn_timer', trigger=IntervalTrigger(seconds=self.timeLeft))
+        except Exception as e:
+            print(f"Failed to modify job {'player_turn_timer'}: {e}")
+        # self._scheduler.reschedule_job('player_turn_timer')
+        # if not self.isEnd:
+        #     self.startTimer()
+            
     def isFullBoard(self) -> bool:
         for row in self.board:
             for cell in row:
@@ -33,7 +69,7 @@ class Game(ABC):
     def getCurrentSymbol(self) -> Cell:
         return self.turn
 
-    def getCurrentTurn(self) -> Player:
+    def getCurrentPlayerTurn(self) -> Player:
         for player in self.players:
             if player.symbol == self.turn:
                 return player
@@ -58,7 +94,6 @@ class Game(ABC):
         for player in self.players:
             if player.user.id == user_id:
                 return player
-
         return None
     
     def getBot(self) -> Player: 

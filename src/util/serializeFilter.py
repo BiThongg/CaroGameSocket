@@ -9,11 +9,11 @@ def serializationFilter(obj, exclude: list[str] = []):
         return obj.name
     elif isinstance(obj, dict):  
         return {
-            k: serializationFilter(v, exclude) for k, v in obj.items() if not should_exclude(k)
+            k: serializationFilter(v, exclude) for k, v in obj.items() if not str(k).startswith("_") and not should_exclude(k)
         }
     elif hasattr(obj, "__dict__"):
         return {
-            k: serializationFilter(v, exclude) for k, v in vars(obj).items() if not should_exclude(k)
+            k: serializationFilter(v, exclude) for k, v in vars(obj).items() if not str(k).startswith("_") and  not should_exclude(k)
         }
     elif isinstance(obj, list):
         return [serializationFilter(i, exclude) for i in obj]
