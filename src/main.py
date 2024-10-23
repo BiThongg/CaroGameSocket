@@ -208,9 +208,7 @@ def leaveRoom(user: User, payload: dict):
             to=request.sid,
         )
     room.onLeave(user.id)
-    # save
-    # storage.rooms[room.id] = room
-    # response
+
     socketio.emit(
         "leaved_room",
         {"message": "leaved room", "room": serialization(room)},
@@ -232,7 +230,6 @@ def startGame(user: User, payload: dict):
         )
 
     room.gameStart(gameType)
-
     socketio.emit(
         "started_game",
         {
@@ -316,25 +313,32 @@ def botMoveSumoku(payload: dict):
     # if win ? end game
     gameEndInfo: dict = game.getGameEndInfo()
 
-    if gameEndInfo is not None:
-        game.isEnd = True
-        socketio.emit(
-            "ended_game",
-            {
-                "message": f"BOT ({gameEndInfo['symbol']}) win !",
-                "winner": serialization(gameEndInfo),
-            },
-            to=room.participantIds(),
-        )
-        return
-
-    # else continue next turn
     game.updateTurn()
     socketio.emit(
         "moved",
         {"message": "Bot moved", "game": serializationFilter(game, ["game"])},
         to=room.participantIds(),
     )
+
+    if gameEndInfo is not None:
+        game.isEnd = True
+        socketio.emit(
+            "ended_game",
+            {
+                "message": f"BOT ({serialization(gameEndInfo['symbol'])}) wins !",
+                "winner": serialization(gameEndInfo),
+            },
+            to=room.participantIds(),
+        )
+        return
+
+
+# just for temp
+@socketio.on("end_game")
+def endGame(payload: dict):
+    room: Room = storage.getRoom(payload["room_id"])
+    room.game = None
+    socketio.emit("ended_game", {"message": "Tie, End Game"}, to=room.participantIds())
 
 
 if __name__ == "__main__":
