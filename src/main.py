@@ -265,6 +265,7 @@ def move(user: User, payload: dict):
 
     if gameEndInfo is not None:
         game.isEnd = True
+        game._scheduler.remove_all_jobs()
         socketio.emit("ended_game", {
                 "message": f"{user.name} ({serialization(gameEndInfo['symbol'])}) wins !",
                 "winner": serialization(gameEndInfo)
@@ -314,6 +315,7 @@ def botMoveSumoku(payload: dict):
 
     if gameEndInfo is not None:
         game.isEnd = True
+        game._scheduler.remove_all_jobs()
         socketio.emit("ended_game", {
                 "message": f"BOT ({serialization(gameEndInfo['symbol'])}) wins !",
                 "winner": serialization(gameEndInfo),
