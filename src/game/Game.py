@@ -9,12 +9,10 @@ from rich.table import Table
 from util.cell import Cell
 from apscheduler.triggers.interval import IntervalTrigger
 from config import socketio
-from util.serialize import serialization
 
 if TYPE_CHECKING:
     from src.player.Player import Player
-
-
+    
 class Game(ABC):
     def __init__(self, size: int):
         self.room = None
@@ -24,10 +22,9 @@ class Game(ABC):
         self.latestPoint: Point = None
         self.players: List[Player] = []
         self._scheduler: BackgroundScheduler = BackgroundScheduler()
-        self.board: List[List[Cell]] = [
-            [Cell.NONE for _ in range(size)] for _ in range(size)
-        ]
-
+        self.board: List[List[Cell]] = [[Cell.NONE for _ in range(size)] for _ in range(size)]
+        
+        
     # TIMEOUT MODULE
     def startGame(self):
         print("Game started !")
@@ -35,15 +32,9 @@ class Game(ABC):
 
     def startTimer(self):
         if not self.isEnd:
-            self._scheduler.add_job(
-                self.timeout,
-                "interval",
-                seconds=self.timeLeft,
-                id="player_turn_timer",
-                replace_existing=True,
-            )
+            self._scheduler.add_job(self.timeout, 'interval', seconds=self.timeLeft, id='player_turn_timer', replace_existing=True)
             self._scheduler.start()
-
+            
     def timeout(self):
         self._scheduler.remove_all_jobs()
         print(f"Player {self.getCurrentPlayerTurn} has run out of time!")
@@ -51,33 +42,21 @@ class Game(ABC):
 
     def playerLoses(self, loser: Player):
         restPlayers = [player for player in self.players if player != loser]
-
+        
         self.room.game = None
-
-        socketio.emit(
-            "ended_game",
-            {
-                "message": f"{restPlayers[0].user.name} ({serialization(restPlayers[0].symbol)}) wins !"
-            },
-            to=self.room.participantIds(),
-        )
+        
+        socketio.emit("ended_game", {
+            "message": f"{restPlayers[0].user.name} ({restPlayers[0].symbol}) wins !"
+        }, to=self.room.participantIds())
         print(f"Player {restPlayers[0]} loses the game!")
-
-    def endGame(self):
-        self._scheduler.remove_all_jobs()
-        self.isEnd = True
-        print("Game ended !")
-
+            
     def switchPlayer(self):
         try:
-            self._scheduler.modify_job(
-                "player_turn_timer", trigger=IntervalTrigger(seconds=self.timeLeft)
-            )
+            self._scheduler.modify_job('player_turn_timer', trigger=IntervalTrigger(seconds=self.timeLeft))
         except Exception as e:
-            print(f"Failed to modify job {'player_turn_timer'}: {e}")
-
+            print(f"Failed to modify job {'player_turn_timer'}: {e}")        
     # TIMEOUT MODULE
-
+    
     def isFullBoard(self) -> bool:
         for row in self.board:
             for cell in row:
