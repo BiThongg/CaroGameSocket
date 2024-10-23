@@ -5,3 +5,4 @@ PyJWT
 numpy
 rich
 jsonpickle
+apscheduler

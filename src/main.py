@@ -1,19 +1,15 @@
-from flask_cors import CORS
-from flask import Flask, request
-from flask_socketio import SocketIO, emit
+from flask import request
+from flask_socketio import emit
+
 
 from User import User
-from player.AIPlayer import AIPlayer
-from room.Room import *
+from room.Room import Room
 from util.point import Point
 from util.serializeFilter import serializationFilter
 from util.serialize import serialization
 from database.data import storage
 from auth.authentication import user_infomation_filter
-
-app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "*"}})
-socketio = SocketIO(app, cors_allowed_origins="*")
+from config import *
 
 
 @socketio.event
@@ -25,11 +21,11 @@ def connect(user: User, payload: dict):
         emit("error", {"message": "User not found"}, to=request.sid)
 
 
-def beforeReconnect(id: str):
-    rooms: list[Room] = storage.getRooms()
-    for room in rooms:
-        if id in room.participantIds():
-            pass
+# def beforeReconnect(id: str):
+#     rooms: list[Room] = storage.getRooms()
+#     for room in rooms:
+#         if id in room.participantIds():
+#             pass
 
 
 @socketio.on("register")
@@ -118,7 +114,7 @@ def joinRoom(user: User, payload: dict):
     if not room:
         socketio.emit(
             "join_room_failed",
-            {"message": "Some error happend please try again !"},
+            {"message": "Some error happened please try again !"},
             to=request.sid,
         )
 
@@ -248,9 +244,7 @@ def move(user: User, payload: dict):
     # valid
     if room is None or room.game is None:
         socketio.emit(
-            "move_failed",
-            {"message": "Not found room or game !"},
-            to=request.sid
+            "move_failed", {"message": "Not found room or game !"}, to=request.sid
         )
 
     game: Game = room.game
@@ -258,7 +252,7 @@ def move(user: User, payload: dict):
         socketio.emit(
             "move_failed",
             {"message": "You are not permission to move !"},
-            to=request.sid
+            to=request.sid,
         )
 
     point: Point = Point(x=payload["point"]["x"], y=payload["point"]["y"])
@@ -267,27 +261,30 @@ def move(user: User, payload: dict):
     gameEndInfo: dict = game.getGameEndInfo()
 
     game.updateTurn()
-    socketio.emit("moved",
+    socketio.emit(
+        "moved",
         {"message": "Moved", "game": serializationFilter(room.game, ["game"])},
-        to=room.participantIds()
+        to=room.participantIds(),
     )
 
     if gameEndInfo is not None:
         game.isEnd = True
-        socketio.emit("ended_game", {
+        socketio.emit(
+            "ended_game",
+            {
                 "message": f"{user.name} ({serialization(gameEndInfo['symbol'])}) wins !",
-                "winner": serialization(gameEndInfo)
+                "winner": serialization(gameEndInfo),
             },
-            to=room.participantIds()
+            to=room.participantIds(),
         )
         return
-    
+
     if game.isFullBoard():
         game.isEnd = True
-        socketio.emit("ended_game", {
-                "message": "Draw game !"
-            }, to=room.participantIds()
+        socketio.emit(
+            "ended_game", {"message": "Draw game !"}, to=room.participantIds()
         )
+
 
 @socketio.on("bot_move")
 def botMoveSumoku(payload: dict):
@@ -296,8 +293,8 @@ def botMoveSumoku(payload: dict):
     if (not room) or (not room.game):
         socketio.emit(
             "bot_move_failed",
-            {"message": "Some error happend please try again !"},
-            to=room.participantIds()
+            {"message": "Some error happened please try again !"},
+            to=room.participantIds(),
         )
 
     game: Game = room.game
@@ -313,7 +310,6 @@ def botMoveSumoku(payload: dict):
 
     player.makeMove()
 
-    # if win ? end game
     gameEndInfo: dict = game.getGameEndInfo()
 
     game.updateTurn()
@@ -334,26 +330,29 @@ def botMoveSumoku(payload: dict):
             to=room.participantIds(),
         )
         return
-    
+
     if game.isFullBoard():
         game.isEnd = True
-        socketio.emit("ended_game", {
-                "message": "Draw game !"
-            }, to=room.participantIds()
+        socketio.emit(
+            "ended_game", {"message": "Draw game !"}, to=room.participantIds()
         )
 
-@socketio.on("surrender")
-@user_infomation_filter
-def surrender(user: User, payload: dict):
-    pass
 
-# just for temp
-# @socketio.on("end_game")
-# def endGame(payload: dict):
-#     room: Room = storage.getRoom(payload["room_id"])
+# def endGame(winner: Player, roomId: str):
+#     room: Room = storage.getRoom(roomId)
+
+#     if (not room) or (not room.game):
+#         socketio.emit("error",
+#             {"message": "Some error happend please try again !"},
+#             to=room.participantIds()
+#         )
+
 #     room.game = None
-#     socketio.emit("ended_game", {"message": "Tie, End Game"}, to=room.participantIds())
 
+#     socketio.emit("ended_game", {
+#         "message": "End Game",
+#         "winner": f"{winner.user.name} ({serialization(winner.symbol)}) wins !"
+#     }, to=room.participantIds())
 
 if __name__ == "__main__":
     try:

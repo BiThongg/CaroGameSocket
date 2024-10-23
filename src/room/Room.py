@@ -57,7 +57,6 @@ class Room:
         if self.competitor is not None and self.competitor.info.id == kickId:
             sid = self.competitor.info.sid
             self.competitor = None
-            
         else:
             for user in self.guests:
                 if user.id == kickId:
@@ -92,11 +91,12 @@ class Room:
         game: Game = GameFactory.construct(GameType[gameType])
         game.addPlayer(player1)
         game.addPlayer(player2)
+        game.room = self
         self.game = game
         # game.randomSeed()
         player1.symbol = Cell.X
         player2.symbol = Cell.O
-        game.updateTurn()
+        game.startGame()
 
     def getOwnerInfo(self) -> User:
         return self.owner.info
@@ -116,6 +116,7 @@ class Room:
                     break
             if userTmp is not None:
                 self.guests.remove(userTmp)
+
 
     def onJoin(self, user: User) -> None:
         if self.isFull():
@@ -144,7 +145,7 @@ class Room:
 
         if user_id != self.owner.info.id or not self.isReady():
             return False
-
+        
         return True
 
     def changeStatus(self, userId: str):
