@@ -1,16 +1,10 @@
 from flask import request
 from flask_socketio import emit
-<<<<<<< HEAD
-
-
-from User import User
-=======
 
 from User import User
 from player.AIPlayer import *
 from player.PersonPlayer import *
 from player.Player import *
->>>>>>> f6484a2170598a6470c0116c69374ce7cce08a1c
 from room.Room import Room
 from util.point import Point
 from util.serializeFilter import serializationFilter
@@ -18,10 +12,7 @@ from util.serialize import serialization
 from database.data import storage
 from auth.authentication import user_infomation_filter
 from config import *
-<<<<<<< HEAD
 
-=======
->>>>>>> f6484a2170598a6470c0116c69374ce7cce08a1c
 
 @socketio.event
 @user_infomation_filter
@@ -31,11 +22,13 @@ def connect(user: User, payload: dict):
     else:
         emit("error", {"message": "User not found"}, to=request.sid)
 
+
 # def beforeReconnect(id: str):
 #     rooms: list[Room] = storage.getRooms()
 #     for room in rooms:
 #         if id in room.participantIds():
 #             pass
+
 
 @socketio.on("register")
 def register(payload):
@@ -54,6 +47,7 @@ def getUser(user: User, payload: dict):
         {"users": serialization(users)},
         to=user.sid,
     )
+
 
 @socketio.on("room_list")
 def handle_fetch_rooms(payload):
@@ -234,12 +228,15 @@ def startGame(user: User, payload: dict):
         )
 
     room.gameStart(gameType)
-    socketio.emit("started_game", {
+    socketio.emit(
+        "started_game",
+        {
             "message": "Game start !!! Come on",
             "game": serializationFilter(room.game, ["game"]),
         },
         to=room.participantIds(),
     )
+
 
 @socketio.on("move")
 @user_infomation_filter
@@ -273,9 +270,11 @@ def move(user: User, payload: dict):
     )
 
     if gameEndInfo is not None:
-        game.isEnd = True
-        game._scheduler.remove_all_jobs()
-        socketio.emit("ended_game", {
+        game.endGame()
+        room.game = None
+        socketio.emit(
+            "ended_game",
+            {
                 "message": f"{user.name} ({serialization(gameEndInfo['symbol'])}) wins !",
                 "winner": serialization(gameEndInfo),
             },
@@ -284,7 +283,8 @@ def move(user: User, payload: dict):
         return
 
     if game.isFullBoard():
-        game.isEnd = True
+        game.endGame()
+        room.game = None
         socketio.emit(
             "ended_game", {"message": "Draw game !"}, to=room.participantIds()
         )
@@ -305,7 +305,9 @@ def botMoveSumoku(payload: dict):
     player: AIPlayer = game.getBot()
 
     if not player:
-        socketio.emit("bot_move_failed", {"message": "Some error happend please try again !"},
+        socketio.emit(
+            "bot_move_failed",
+            {"message": "Some error happend please try again !"},
             to=room.participantIds(),
         )
         return
@@ -322,9 +324,11 @@ def botMoveSumoku(payload: dict):
     )
 
     if gameEndInfo is not None:
-        game.isEnd = True
-        game._scheduler.remove_all_jobs()
-        socketio.emit("ended_game", {
+        game.endGame()
+        room.game = None
+        socketio.emit(
+            "ended_game",
+            {
                 "message": f"BOT ({serialization(gameEndInfo['symbol'])}) wins !",
                 "winner": serialization(gameEndInfo),
             },
@@ -333,10 +337,12 @@ def botMoveSumoku(payload: dict):
         return
 
     if game.isFullBoard():
-        game.isEnd = True
+        game.endGame()
+        room.game = None
         socketio.emit(
             "ended_game", {"message": "Draw game !"}, to=room.participantIds()
         )
+
 
 # def endGame(winner: Player, roomId: str):
 #     room: Room = storage.getRoom(roomId)
@@ -346,9 +352,9 @@ def botMoveSumoku(payload: dict):
 #             {"message": "Some error happend please try again !"},
 #             to=room.participantIds()
 #         )
-    
+
 #     room.game = None
-    
+
 #     socketio.emit("ended_game", {
 #         "message": "End Game",
 #         "winner": f"{winner.user.name} ({serialization(winner.symbol)}) wins !"

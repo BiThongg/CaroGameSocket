@@ -27,10 +27,18 @@ def user_infomation_filter(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         payload: dict = args[0] if args else {}
-        print(payload.get("user_id") or request.args.get("user_id") or "None")
 
-        userId: str = request.args.get("user_id") or payload.get("user_id")
-        user = storage.getUser(userId) if userId != None else None
+        user_id: str = None
+
+        if request.args and "user_id" in request.args:
+            user_id: str = request.args.get("user_id")
+        elif payload and "user_id" in payload:
+            user_id: str = payload.get("user_id")
+
+        if not user_id:
+            return f(None, payload)
+
+        user = storage.getUser(userId=user_id)
         return f(user, payload)
 
     return decorated_function
