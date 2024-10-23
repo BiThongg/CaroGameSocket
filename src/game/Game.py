@@ -31,7 +31,6 @@ class Game(ABC):
 
     def startTimer(self):
         if not self.isEnd:
-            print(f">> Player {self.getCurrentPlayerTurn().user.name}'s turn. Time left: {self.timeLeft} seconds !")
             self._scheduler.add_job(self.timeout, 'interval', seconds=self.timeLeft, id='player_turn_timer', replace_existing=True)
             self._scheduler.start()
             
