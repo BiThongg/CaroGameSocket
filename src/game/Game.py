@@ -60,7 +60,7 @@ class Game(ABC):
         )
         print(f"Player {restPlayers[0]} loses the game!")
 
-    def switchPlayer(self):
+    def modifyTimer(self):
         try:
             self._scheduler.modify_job(
                 "player_turn_timer", trigger=IntervalTrigger(seconds=self.timeLeft)
@@ -97,6 +97,7 @@ class Game(ABC):
             raise Exception("Cell is not empty")
         self.latestPoint = point
         self.board[point.y][point.x] = player.symbol
+
         return
 
     def checkPlayer(self, user_id: str) -> bool:

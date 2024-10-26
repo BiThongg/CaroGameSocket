@@ -13,7 +13,8 @@ class Player(ABC):
     def __init__(self, user: User | None = None):
         self.game: Game = None
         self.symbol: Cell = Cell.NONE
-        self.user:User = user
+        self.user: User = user
 
     def move(self, point: Point):
         self.game.handleMove(self, point)
+        self.game.modifyTimer()
