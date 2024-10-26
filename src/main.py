@@ -21,15 +21,7 @@ def connect(user: User, payload: dict):
         user.sid = request.sid
     else:
         emit("error", {"message": "User not found"}, to=request.sid)
-
-
-# def beforeReconnect(id: str):
-#     rooms: list[Room] = storage.getRooms()
-#     for room in rooms:
-#         if id in room.participantIds():
-#             pass
-
-
+        
 @socketio.on("register")
 def register(payload):
     user = User(name=payload["name"], sid=request.sid)
@@ -37,13 +29,11 @@ def register(payload):
     storage.users[user_id] = user
     socketio.emit("register", {"user": serialization(user)}, to=user.sid)
 
-
 @socketio.on("get_users")
 @user_infomation_filter
 def getUser(user: User, payload: dict):
     users = list(storage.users.values())
-    socketio.emit(
-        "list_of_user",
+    socketio.emit("list_of_user",
         {"users": serialization(users)},
         to=user.sid,
     )
@@ -91,15 +81,13 @@ def getRoomFromUserId(user: User, payload: dict):
         (
             room
             for room in storage.rooms.values()
-            if room.owner.info.id == user.id or room.competitor.info.id == user.id
+            if room.owner.info.id == user.id or (room.competitor != None and room.competitor.info.id == user.id)
         ),
         None,
     )
 
     if room:
-        socketio.emit(
-            "room_info",
-            {
+        socketio.emit("joined_room", {
                 "room": serialization(room),
             },
             to=request.sid,
@@ -122,9 +110,7 @@ def joinRoom(user: User, payload: dict):
 
     room.onJoin(user)
 
-    socketio.emit(
-        "joined_room",
-        {"message": "Joined room", "room": serialization(room)},
+    socketio.emit("joined_room", {"message": "Joined room", "room": serialization(room)},
         to=room.participantIds(),
     )
 
@@ -187,6 +173,7 @@ def changeGameType(user: User, payload: dict):
     room: Room = storage.rooms.get(payload["room_id"])
     gameType: str = payload["game_type"]
 
+    print(request.sid)
     if user.id == room.owner.info.id:
         socketio.emit(
             "game_type_changed",
@@ -228,9 +215,7 @@ def startGame(user: User, payload: dict):
         )
 
     room.gameStart(gameType)
-    socketio.emit(
-        "started_game",
-        {
+    socketio.emit("started_game", {
             "message": "Game start !!! Come on",
             "game": serializationFilter(room.game, ["game"]),
         },
@@ -257,15 +242,14 @@ def move(user: User, payload: dict):
             to=request.sid,
         )
 
-    point: Point = Point(x=payload["point"]["x"], y=payload["point"]["y"])
+    point = Point(x=payload["point"]["x"], y=payload["point"]["y"])
     game.getPlayer(user.id).move(point)
 
     gameEndInfo: dict = game.getGameEndInfo()
 
     game.updateTurn()
     socketio.emit(
-        "moved",
-        {"message": "Moved", "game": serializationFilter(room.game, ["game"])},
+        "moved", {"message": "Moved", "game": serializationFilter(room.game, ["game"])},
         to=room.participantIds(),
     )
 
@@ -325,7 +309,6 @@ def botMoveSumoku(payload: dict):
 
     if gameEndInfo is not None:
         game.endGame()
-        room.game = None
         socketio.emit(
             "ended_game",
             {
@@ -338,7 +321,6 @@ def botMoveSumoku(payload: dict):
 
     if game.isFullBoard():
         game.endGame()
-        room.game = None
         socketio.emit(
             "ended_game", {"message": "Draw game !"}, to=room.participantIds()
         )

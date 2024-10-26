@@ -12,11 +12,12 @@ from config import socketio
 
 if TYPE_CHECKING:
     from src.player.Player import Player
+    from src.room.Room import Room
 
 
 class Game(ABC):
     def __init__(self, size: int):
-        self.room = None
+        self.room: Room = None
         self.timeLeft: int = 30
         self.isEnd: bool = False
         self.turn: Cell = Cell.X
@@ -39,7 +40,7 @@ class Game(ABC):
                 "interval",
                 seconds=self.timeLeft,
                 id="player_turn_timer",
-                replace_existing=True,
+                replace_existing=True
             )
             self._scheduler.start()
 
@@ -62,9 +63,7 @@ class Game(ABC):
 
     def modifyTimer(self):
         try:
-            self._scheduler.modify_job(
-                "player_turn_timer", trigger=IntervalTrigger(seconds=self.timeLeft)
-            )
+            self._scheduler.reschedule_job("player_turn_timer", trigger=IntervalTrigger(seconds=self.timeLeft))
         except Exception as e:
             print(f"Failed to modify job {'player_turn_timer'}: {e}")
 
@@ -79,6 +78,7 @@ class Game(ABC):
 
     def endGame(self) -> None:
         self.isEnd = True
+        self.room.game = None
         self._scheduler.remove_all_jobs()
 
     def getCurrentSymbol(self) -> Cell:
@@ -97,7 +97,6 @@ class Game(ABC):
             raise Exception("Cell is not empty")
         self.latestPoint = point
         self.board[point.y][point.x] = player.symbol
-
         return
 
     def checkPlayer(self, user_id: str) -> bool:
