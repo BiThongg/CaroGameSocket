@@ -62,15 +62,13 @@ def handle_fetch_rooms(payload):
 
 
 @socketio.on("create_room")
-def createRoom(payload):
-    room = storage.createRoom(payload["room_name"], payload["user_id"])
+@user_infomation_filter
+def createRoom(user: User, payload: dict):
+    room = storage.createRoom(payload["room_name"], user.id)
 
-    socketio.emit(
-        "room_created",
-        {
+    socketio.emit("room_created", {
             "room": serialization(room),
-        },
-        to=room.participantIds(),
+        }, to=room.participantIds()
     )
 
 
