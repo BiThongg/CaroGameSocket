@@ -38,7 +38,7 @@ class Storage:
     def getUsers(self) -> List[User]:
         return list(self.users.values())
 
-    def createRoom(self, name: str, userId: str) -> Room:
+    def createRoom(self, name: str, userId) -> Room:
         user = self.users.get(userId)
         if user is None:
             raise Exception("User not found")
