@@ -27,9 +27,10 @@ class Game(ABC):
         self.board: List[List[Cell]] = [
             [Cell.NONE for _ in range(size)] for _ in range(size)
         ]
+        self.onGame()
 
     # TIMEOUT MODULE
-    def startGame(self):
+    def onGame(self):
         print("Game started !")
         self.startTimer()
 
@@ -46,20 +47,14 @@ class Game(ABC):
 
     def timeout(self):
         self._scheduler.remove_all_jobs()
-        print(f"Player {self.getCurrentPlayerTurn} has run out of time!")
         self.playerLoses(self.getCurrentPlayerTurn())
 
     def playerLoses(self, loser: Player):
         restPlayers = [player for player in self.players if player != loser]
-
         self.room.game = None
-
-        socketio.emit(
-            "ended_game",
-            {"message": f"{restPlayers[0].user.name} ({restPlayers[0].symbol}) wins !"},
-            to=self.room.participantIds(),
+        socketio.emit("ended_game", {"message": f"{restPlayers[0].user.name} ({restPlayers[0].symbol}) wins !"},
+            to=self.room.participantIds()
         )
-        print(f"Player {restPlayers[0]} loses the game!")
 
     def modifyTimer(self):
         try:
@@ -79,6 +74,7 @@ class Game(ABC):
     def endGame(self) -> None:
         self.isEnd = True
         self.room.game = None
+        self.room.restartTimer()
         self._scheduler.remove_all_jobs()
 
     def getCurrentSymbol(self) -> Cell:

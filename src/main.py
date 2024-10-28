@@ -65,7 +65,6 @@ def handle_fetch_rooms(payload):
 @user_infomation_filter
 def createRoom(user: User, payload: dict):
     room = storage.createRoom(payload["room_name"], user.id)
-
     socketio.emit("room_created", {
             "room": serialization(room),
         }, to=room.participantIds()
@@ -100,18 +99,14 @@ def joinRoom(user: User, payload: dict):
     room: Room = storage.rooms.get(payload["room_id"])
 
     if not room:
-        socketio.emit(
-            "join_room_failed",
-            {"message": "Some error happened please try again !"},
-            to=request.sid,
+        socketio.emit("join_room_failed",
+            {"message": "Some errors occurred, please try again !"},
+            to=request.sid
         )
 
     room.onJoin(user)
 
-    socketio.emit("joined_room", {"message": "Joined room", "room": serialization(room)},
-        to=room.participantIds(),
-    )
-
+    socketio.emit("joined_room", {"message": "Joined room", "room": serialization(room)}, to=room.participantIds())
 
 @socketio.on("kick")
 @user_infomation_filter
@@ -133,7 +128,7 @@ def onKick(user: User, payload: dict):
 def add_bot(user: User, payload: dict):
     room: Room = storage.rooms.get(payload["room_id"])
 
-    if room is None or room.isFull() or user.id != room.getOwnerInfo().id:
+    if room is None or room.isFullPlayer() or user.id != room.getOwnerInfo().id:
         socketio.emit(
             "add_bot_failed",
             {"message": "Some error happend please try again !"},
