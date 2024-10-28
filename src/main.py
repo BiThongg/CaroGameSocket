@@ -18,10 +18,12 @@ from config import *
 @user_infomation_filter
 def connect(user: User, payload: dict):
     if user is not None:
+        print(f"User {user.name} connected")
         user.sid = request.sid
     else:
         emit("error", {"message": "User not found"}, to=request.sid)
-        
+
+
 @socketio.on("register")
 def register(payload):
     user = User(name=payload["name"], sid=request.sid)
@@ -29,11 +31,13 @@ def register(payload):
     storage.users[user_id] = user
     socketio.emit("register", {"user": serialization(user)}, to=user.sid)
 
+
 @socketio.on("get_users")
 @user_infomation_filter
 def getUser(user: User, payload: dict):
     users = list(storage.users.values())
-    socketio.emit("list_of_user",
+    socketio.emit(
+        "list_of_user",
         {"users": serialization(users)},
         to=user.sid,
     )
@@ -66,9 +70,12 @@ def handle_fetch_rooms(payload):
 def createRoom(user: User, payload: dict):
     room = storage.createRoom(payload["room_name"], user.id)
 
-    socketio.emit("room_created", {
+    socketio.emit(
+        "room_created",
+        {
             "room": serialization(room),
-        }, to=room.participantIds()
+        },
+        to=room.participantIds(),
     )
 
 
@@ -79,13 +86,16 @@ def getRoomFromUserId(user: User, payload: dict):
         (
             room
             for room in storage.rooms.values()
-            if room.owner.info.id == user.id or (room.competitor != None and room.competitor.info.id == user.id)
+            if room.owner.info.id == user.id
+            or (room.competitor != None and room.competitor.info.id == user.id)
         ),
         None,
     )
 
     if room:
-        socketio.emit("joined_room", {
+        socketio.emit(
+            "joined_room",
+            {
                 "room": serialization(room),
             },
             to=request.sid,
@@ -108,7 +118,9 @@ def joinRoom(user: User, payload: dict):
 
     room.onJoin(user)
 
-    socketio.emit("joined_room", {"message": "Joined room", "room": serialization(room)},
+    socketio.emit(
+        "joined_room",
+        {"message": "Joined room", "room": serialization(room)},
         to=room.participantIds(),
     )
 
@@ -123,7 +135,11 @@ def onKick(user: User, payload: dict):
 
     socketio.emit(
         "kicked",
-        {"message": "User was kicked", "room": serialization(room)},
+        {
+            "message": "User was kicked",
+            "room": serialization(room),
+            "kicked_id": payload["kick_id"],
+        },
         to=receivers,
     )
 
@@ -213,7 +229,9 @@ def startGame(user: User, payload: dict):
         )
 
     room.gameStart(gameType)
-    socketio.emit("started_game", {
+    socketio.emit(
+        "started_game",
+        {
             "message": "Game start !!! Come on",
             "game": serializationFilter(room.game, ["game"]),
         },
@@ -247,7 +265,8 @@ def move(user: User, payload: dict):
 
     game.updateTurn()
     socketio.emit(
-        "moved", {"message": "Moved", "game": serializationFilter(room.game, ["game"])},
+        "moved",
+        {"message": "Moved", "game": serializationFilter(room.game, ["game"])},
         to=room.participantIds(),
     )
 
