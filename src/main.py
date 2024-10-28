@@ -69,7 +69,9 @@ def handle_fetch_rooms(payload):
 @user_infomation_filter
 def createRoom(user: User, payload: dict):
     room = storage.createRoom(payload["room_name"], user.id)
-    socketio.emit("room_created", {
+    socketio.emit(
+        "room_created",
+        {
             "room": serialization(room),
         },
         to=room.participantIds(),
@@ -107,23 +109,20 @@ def joinRoom(user: User, payload: dict):
     room: Room = storage.rooms.get(payload["room_id"])
 
     if not room:
-        socketio.emit("join_room_failed",
+        socketio.emit(
+            "join_room_failed",
             {"message": "Some errors occurred, please try again !"},
-            to=request.sid
+            to=request.sid,
         )
 
     room.onJoin(user)
 
-<<<<<<< HEAD
     socketio.emit(
         "joined_room",
         {"message": "Joined room", "room": serialization(room)},
         to=room.participantIds(),
     )
 
-=======
-    socketio.emit("joined_room", {"message": "Joined room", "room": serialization(room)}, to=room.participantIds())
->>>>>>> 802dc85d8ad1644d4f5aa3979236305dc32fd258
 
 @socketio.on("kick")
 @user_infomation_filter
