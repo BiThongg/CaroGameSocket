@@ -12,6 +12,9 @@ from player.Player import Player
 from enum import Enum
 from util.cell import Cell
 from typing import Type, Callable, Dict
+from apscheduler.triggers.interval import IntervalTrigger
+from apscheduler.schedulers.background import BackgroundScheduler
+from config import socketio
 
 class UserStatus(Enum):
     NOT_READY = "NOT_READY"
@@ -36,7 +39,6 @@ class Participant:
         self.info: User = user
         self.status: UserStatus = UserStatus.READY
 
-
 class Room:
     def __init__(self, name, owner: User):
         self.id: str = str(random.randint(100000, 100000 * 2 - 1))
@@ -44,9 +46,46 @@ class Room:
         self.competitor: Participant = None
         self.owner: Participant = Participant(owner)
         self.gameType: GameType = GameType.CASUAL
-
+        self._scheduler: BackgroundScheduler = BackgroundScheduler()
         self.guests: List[User] = []
         self.game: Game = None
+        self.onRoomTimer()
+        
+    # -> Destroy timer
+    # desc: start timer khi vừa tạo phòng, 
+    # interval mỗi 15s 1 lần {nếu ko có game và chưa đủ player thì xóa room}. 
+    # Khi vừa hết game thì restart room's timer
+    def onRoomTimer(self):
+        self.startTimer()
+
+    def startTimer(self): # Waiting time for room was being fixed 15s
+        self._scheduler.add_job(
+            self.timeout,
+            "interval",
+            seconds=15,
+            id="room_waiting_time",
+            replace_existing=True
+        )
+        self._scheduler.start()
+        
+    def restartTimer(self):
+        try:
+            self._scheduler.reschedule_job(job_id="room_waiting_time", trigger=IntervalTrigger(seconds=15))
+        except Exception as e:
+            print(f"Failed to modify job {'player_turn_timer'}: {e}")
+
+    def timeout(self):
+        if not self.isFullPlayer() and self.game is None:
+            self._scheduler.remove_all_jobs()
+            socketio.emit("room_destroyed", {
+                "message": "The room was canceled due to timeout !"
+            }, to=self.participantIds())
+        else:
+            try:
+                self._scheduler.reschedule_job(job_id="room_waiting_time", trigger=IntervalTrigger(seconds=15))
+            except Exception as e:
+                print(f"Failed to modify job {'player_turn_timer'}: {e}")
+    # End timer
 
     def kick(self, owner_id: str, kickId: str) -> str:
         if owner_id != self.owner.info.id:
@@ -64,18 +103,9 @@ class Room:
                     self.guests.remove(user)
                     break
         return sid
-
     def addGuest(self, user: User):
         self.guests.append(user)
-
-    # def changeGameType(self, gameType: str) -> None:
-    #     if request.sid != self.owner.info.id:
-    #         raise Exception("You are not the owner")
-    #     try:
-    #         if self.owner.info.id == request.sid:
-    #             self.gameType = GameType[gameType]
-    #     except KeyError:
-    #         raise Exception(f"Not found any game type with {gameType} !")
+    
 
     def addCompetitor(self, user: User):
         self.competitor = Participant(user)
@@ -91,12 +121,11 @@ class Room:
         game: Game = GameFactory.construct(GameType[gameType])
         game.addPlayer(player1)
         game.addPlayer(player2)
-        game.room = self
         self.game = game
-        # game.randomSeed()
+        game.room = self
+        
         player1.symbol = Cell.X
         player2.symbol = Cell.O
-        game.startGame()
 
     def getOwnerInfo(self) -> User:
         return self.owner.info
@@ -119,15 +148,15 @@ class Room:
 
 
     def onJoin(self, user: User) -> None:
-        if self.isFull():
+        if self.isFullPlayer():
             self.guests.append(user)
-            return
-        self.addCompetitor(user)
+        else:
+            self.addCompetitor(user)
 
     def onDispose(self) -> None:
-        pass
+        self._scheduler.shutdown()
 
-    def isFull(self) -> bool:
+    def isFullPlayer(self) -> bool:
         return self.competitor is not None and self.owner is not None
 
     def canAction(self, owner) -> bool:
@@ -140,7 +169,7 @@ class Room:
         )
 
     def checkConditionForStart(self, user_id) -> bool:
-        if not self.isFull():
+        if not self.isFullPlayer():
             return False
 
         if user_id != self.owner.info.id or not self.isReady():
