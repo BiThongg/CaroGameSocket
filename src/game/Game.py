@@ -27,11 +27,10 @@ class Game(ABC):
         self.board: List[List[Cell]] = [
             [Cell.NONE for _ in range(size)] for _ in range(size)
         ]
-        self.onGame()
+        self.onGameTimer()
 
     # TIMEOUT MODULE
-    def onGame(self):
-        print("Game started !")
+    def onGameTimer(self):
         self.startTimer()
 
     def startTimer(self):
@@ -74,7 +73,7 @@ class Game(ABC):
     def endGame(self) -> None:
         self.isEnd = True
         self.room.game = None
-        self.room.restartTimer()
+        self.room.onRoomTimer()
         self._scheduler.remove_all_jobs()
 
     def getCurrentSymbol(self) -> Cell:
