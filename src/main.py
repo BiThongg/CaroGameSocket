@@ -85,13 +85,8 @@ def getRoomFromUserId(user: User, payload: dict):
         (
             room
             for room in storage.rooms.values()
-<<<<<<< HEAD
             if (room.owner and room.owner.info.id == user.id)
             or (room.competitor and room.competitor.info.id == user.id)
-=======
-            if room.owner != None and room.owner.info.id == user.id
-            or (room.competitor != None and room.competitor.info.id == user.id)
->>>>>>> 75a5321cbae3c77fa174f644d25ea2732c73156c
         ),
         None,
     )
@@ -140,7 +135,9 @@ def onKick(user: User, payload: dict):
     receivers = room.participantIds()
     room.kick(user.id, payload["kick_id"])
 
-    socketio.emit("kicked", {
+    socketio.emit(
+        "kicked",
+        {
             "message": "User was kicked",
             "room": serialization(room),
             "kicked_id": payload["kick_id"],
@@ -196,22 +193,31 @@ def changeGameType(user: User, payload: dict):
         socketio.emit(
             "game_type_changed",
             {"game_type": gameType, "room_id": room.id},
-            to=room.participantIds()
+            to=room.participantIds(),
         )
+
 
 @socketio.on("delete_exist_room_of_user")
 @user_infomation_filter
 def deleteExistRoomOfuser(user: User, payload: dict):
-    room: Room = next((room
+    room: Room = next(
+        (
+            room
             for room in storage.rooms.values()
-            if room.owner != None and room.owner.info.id == user.id
-            or (room.competitor != None and room.competitor.info.id == user.id)
-        ), None)
+            if room.owner
+            and room.owner.info.id == user.id
+            or (room.competitor and room.competitor.info.id == user.id)
+        ),
+        None,
+    )
     if room is not None:
         room.onLeave(user.id)
-        socketio.emit("leaved_room",
+        socketio.emit(
+            "leaved_room",
             {"message": "Leaved room", "room": serialization(room)},
-            to=room.participantIds())
+            to=room.participantIds(),
+        )
+
 
 @socketio.on("leave_room")
 @user_infomation_filter
@@ -219,9 +225,10 @@ def leaveRoom(user: User, payload: dict):
     room: Room = storage.rooms.get(payload["room_id"])
 
     if room is None:
-        socketio.emit("leave_room_failed",
+        socketio.emit(
+            "leave_room_failed",
             {"message": "Some error happend please try again !"},
-            to=request.sid
+            to=request.sid,
         )
         return
 
@@ -229,18 +236,12 @@ def leaveRoom(user: User, payload: dict):
 
     room.onLeave(user.id)
 
-<<<<<<< HEAD
     socketio.emit(
         "leaved_room",
         {"message": "leaved_room", "room": serialization(room), "leave_id": user.id},
         to=receivers,
     )
 
-=======
-    socketio.emit("leaved_room",
-        {"message": "Leaved room", "room": serialization(room)},
-        to=room.participantIds())
->>>>>>> 75a5321cbae3c77fa174f644d25ea2732c73156c
 
 @socketio.on("start_game")
 @user_infomation_filter
@@ -282,7 +283,7 @@ def move(user: User, payload: dict):
         socketio.emit(
             "move_failed",
             {"message": "You are not permission to move !"},
-            to=request.sid
+            to=request.sid,
         )
 
     point = Point(x=payload["point"]["x"], y=payload["point"]["y"])
