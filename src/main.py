@@ -85,22 +85,24 @@ def getRoomFromUserId(user: User, payload: dict):
         (
             room
             for room in storage.rooms.values()
-            if room.owner.info.id == user.id
-            or (room.competitor != None and room.competitor.info.id == user.id)
+            if (room.owner and room.owner.info.id == user.id)
+            or (room.competitor and room.competitor.info.id == user.id)
         ),
         None,
     )
 
-    if room:
-        socketio.emit(
-            "joined_room",
-            {
-                "room": serialization(room),
-            },
-            to=request.sid,
-        )
+    if room is None:
+        socketio.emit("error", {"message": "Room not found"}, to=request.sid)
         return
-    socketio.emit("error", {"message": "Room not found"}, to=request.sid)
+
+    socketio.emit(
+        "joined_room",
+        {
+            "room": serialization(room),
+        },
+        to=request.sid,
+    )
+    return
 
 
 @socketio.on("join_room")
@@ -114,6 +116,7 @@ def joinRoom(user: User, payload: dict):
             {"message": "Some errors occurred, please try again !"},
             to=request.sid,
         )
+        return
 
     room.onJoin(user)
 
@@ -199,18 +202,23 @@ def changeGameType(user: User, payload: dict):
 @user_infomation_filter
 def leaveRoom(user: User, payload: dict):
     room: Room = storage.rooms.get(payload["room_id"])
+
     if room is None:
         socketio.emit(
             "leave_room_failed",
             {"message": "Some error happend please try again !"},
             to=request.sid,
         )
+        return
+
+    receivers = room.participantIds()
+
     room.onLeave(user.id)
 
     socketio.emit(
         "leaved_room",
-        {"message": "leaved room", "room": serialization(room)},
-        to=room.participantIds() + [user.sid],
+        {"message": "leaved_room", "room": serialization(room), "leave_id": user.id},
+        to=receivers,
     )
 
 

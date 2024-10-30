@@ -16,28 +16,33 @@ from apscheduler.triggers.interval import IntervalTrigger
 from apscheduler.schedulers.background import BackgroundScheduler
 from config import socketio
 
+
 class UserStatus(Enum):
     NOT_READY = "NOT_READY"
     READY = "READY"
+
 
 class GameType(Enum):
     TIC_TAC_TOE = "TIC_TAC_TOE"
     CASUAL = "CASUAL"
 
+
 class GameFactory:
     gameDict: Dict[Enum, Type] = {
         GameType.TIC_TAC_TOE: TicTacToe,
-        GameType.CASUAL: CasualGame
+        GameType.CASUAL: CasualGame,
     }
 
     @staticmethod
     def construct(gameType: GameType) -> Game:
         return GameFactory.gameDict[gameType]()
 
+
 class Participant:
     def __init__(self, user: User):
         self.info: User = user
         self.status: UserStatus = UserStatus.READY
+
 
 class Room:
     def __init__(self, name, owner: User):
@@ -49,42 +54,45 @@ class Room:
         self._scheduler: BackgroundScheduler = BackgroundScheduler()
         self.guests: List[User] = []
         self.game: Game = None
-        self.onRoomTimer()
-        
-    # -> Destroy timer
-    # desc: start timer khi vừa tạo phòng, 
-    # interval mỗi 15s 1 lần {nếu ko có game và chưa đủ player thì xóa room}. 
-    # Khi vừa hết game thì restart room's timer
+        # self.onRoomTimer()
+
     def onRoomTimer(self):
         self.startTimer()
 
-    def startTimer(self): # Waiting time for room was being fixed 15s
+    def startTimer(self):  # Waiting time for room was being fixed 15s
         self._scheduler.add_job(
             self.timeout,
             "interval",
             seconds=15,
             id="room_waiting_time",
-            replace_existing=True
+            replace_existing=True,
         )
         self._scheduler.start()
-        
+
     def restartTimer(self):
         try:
-            self._scheduler.reschedule_job(job_id="room_waiting_time", trigger=IntervalTrigger(seconds=15))
+            self._scheduler.reschedule_job(
+                job_id="room_waiting_time", trigger=IntervalTrigger(seconds=15)
+            )
         except Exception as e:
             print(f"Failed to modify job {'player_turn_timer'}: {e}")
 
     def timeout(self):
         if not self.isFullPlayer() and self.game is None:
             self._scheduler.remove_all_jobs()
-            socketio.emit("room_destroyed", {
-                "message": "The room was canceled due to timeout !"
-            }, to=self.participantIds())
+            socketio.emit(
+                "room_destroyed",
+                {"message": "The room was canceled due to timeout !"},
+                to=self.participantIds(),
+            )
         else:
             try:
-                self._scheduler.reschedule_job(job_id="room_waiting_time", trigger=IntervalTrigger(seconds=15))
+                self._scheduler.reschedule_job(
+                    job_id="room_waiting_time", trigger=IntervalTrigger(seconds=15)
+                )
             except Exception as e:
                 print(f"Failed to modify job {'player_turn_timer'}: {e}")
+
     # End timer
 
     def kick(self, owner_id: str, kickId: str) -> str:
@@ -103,9 +111,9 @@ class Room:
                     self.guests.remove(user)
                     break
         return sid
+
     def addGuest(self, user: User):
         self.guests.append(user)
-    
 
     def addCompetitor(self, user: User):
         self.competitor = Participant(user)
@@ -123,7 +131,7 @@ class Room:
         game.addPlayer(player2)
         self.game = game
         game.room = self
-        
+
         player1.symbol = Cell.X
         player2.symbol = Cell.O
 
@@ -131,12 +139,13 @@ class Room:
         return self.owner.info
 
     def onLeave(self, userId: str) -> None:
-        if userId == self.owner.info.id:
+        if self.owner and self.owner.info.id == userId:
             self.owner = self.competitor
             self.competitor = None
 
-        elif userId == self.competitor.info.id:
+        elif self.competitor and self.competitor.info.id == userId:
             self.competitor = None
+
         else:
             userTmp = None
             for user in self.guests:
@@ -145,7 +154,6 @@ class Room:
                     break
             if userTmp is not None:
                 self.guests.remove(userTmp)
-
 
     def onJoin(self, user: User) -> None:
         if self.isFullPlayer():
@@ -174,7 +182,7 @@ class Room:
 
         if user_id != self.owner.info.id or not self.isReady():
             return False
-        
+
         return True
 
     def changeStatus(self, userId: str):
@@ -192,7 +200,7 @@ class Room:
         ids.append(self.owner.info.sid)
         if self.competitor is not None:
             ids.append(self.competitor.info.sid)
-        return [x for x in ids if x is not None and not x.startswith('BOT_')]
+        return [x for x in ids if x is not None and not x.startswith("BOT_")]
 
     def addBot(self) -> None:
         self.competitor = Participant(User("BOT_" + str(uuid.uuid4()), None))
