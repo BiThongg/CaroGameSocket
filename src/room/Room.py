@@ -1,17 +1,17 @@
 from typing import List
 import uuid
-
+from datetime import datetime
 from numpy import random
+from User import User
 from game.Game import Game
 from game.TicTacToe import TicTacToe
 from game.CasualGame import CasualGame
-from User import User
 from player.AIPlayer import AIPlayer
 from player.PersonPlayer import PersonPlayer
 from player.Player import Player
 from enum import Enum
 from util.cell import Cell
-from typing import Type, Callable, Dict
+from typing import Type, Dict
 from apscheduler.triggers.interval import IntervalTrigger
 from apscheduler.schedulers.background import BackgroundScheduler
 from config import socketio
@@ -59,17 +59,21 @@ class Room:
     def onRoomTimer(self):
         self.startTimer()
 
+    def offRoomTimer(self):
+        self._scheduler.remove_all_jobs()
+
     def startTimer(self):  # Waiting time for room was being fixed 15s
         self._scheduler.add_job(
             self.timeout,
             "interval",
-            seconds=15,
+            seconds=16,
             id="room_waiting_time",
             replace_existing=True,
         )
         self._scheduler.start()
 
     def restartTimer(self):
+        self.createdTime = str(datetime.now())
         try:
             self._scheduler.reschedule_job(
                 job_id="room_waiting_time", trigger=IntervalTrigger(seconds=15)
@@ -98,7 +102,6 @@ class Room:
     def kick(self, owner_id: str, kickId: str) -> str:
         if owner_id != self.owner.info.id:
             raise Exception("You are not owner")
-
         sid = None
 
         if self.competitor is not None and self.competitor.info.id == kickId:
@@ -134,6 +137,7 @@ class Room:
 
         player1.symbol = Cell.X
         player2.symbol = Cell.O
+        self.offRoomTimer()
 
     def getOwnerInfo(self) -> User:
         return self.owner.info
@@ -154,15 +158,20 @@ class Room:
                     break
             if userTmp is not None:
                 self.guests.remove(userTmp)
+        self.restartTimer()
 
     def onJoin(self, user: User) -> None:
         if self.isFullPlayer():
             self.guests.append(user)
         else:
             self.addCompetitor(user)
+        self.restartTimer()
 
     def onDispose(self) -> None:
-        self._scheduler.shutdown()
+        self.offRoomTimer()
+        self.owner = None
+        self.competitor = None
+        self.guests = None
 
     def isFullPlayer(self) -> bool:
         return self.competitor is not None and self.owner is not None
@@ -197,7 +206,8 @@ class Room:
 
     def participantIds(self) -> list[str]:
         ids = [watcher.sid for watcher in self.guests]
-        ids.append(self.owner.info.sid)
+        if self.owner is not None:
+            ids.append(self.owner.info.sid)
         if self.competitor is not None:
             ids.append(self.competitor.info.sid)
         return [x for x in ids if x is not None and not x.startswith("BOT_")]

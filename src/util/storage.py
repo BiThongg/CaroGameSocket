@@ -1,9 +1,10 @@
 from typing import Dict, List
 
 from jsonpickle.handlers import uuid
+from typing import TYPE_CHECKING
+
 from User import User
 from room.Room import Room
-
 
 class Storage:
     def __init__(self) -> None:
