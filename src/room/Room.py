@@ -137,7 +137,7 @@ class Room:
 
         player1.symbol = Cell.X
         player2.symbol = Cell.O
-        self.offRoomTimer()
+        # self.offRoomTimer()
 
     def getOwnerInfo(self) -> User:
         return self.owner.info
@@ -158,7 +158,6 @@ class Room:
                     break
             if userTmp is not None:
                 self.guests.remove(userTmp)
-        self.restartTimer()
 
     def onJoin(self, user: User) -> None:
         if self.isFullPlayer():
