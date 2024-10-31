@@ -300,7 +300,7 @@ def move(user: User, payload: dict):
 
     if gameEndInfo is not None:
         game.endGame()
-        room.game = None
+
         socketio.emit(
             "ended_game",
             {
