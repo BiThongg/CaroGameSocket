@@ -40,7 +40,7 @@ class Game(ABC):
                 "interval",
                 seconds=self.timeLeft,
                 id="player_turn_timer",
-                replace_existing=True
+                replace_existing=True,
             )
             self._scheduler.start()
 
@@ -51,13 +51,17 @@ class Game(ABC):
     def playerLoses(self, loser: Player):
         restPlayers = [player for player in self.players if player != loser]
         self.room.game = None
-        socketio.emit("ended_game", {"message": f"{restPlayers[0].user.name} ({restPlayers[0].symbol}) wins !"},
-            to=self.room.participantIds()
+        socketio.emit(
+            "ended_game",
+            {"message": f"{restPlayers[0].user.name} ({restPlayers[0].symbol}) wins !"},
+            to=self.room.participantIds(),
         )
 
     def modifyTimer(self):
         try:
-            self._scheduler.reschedule_job("player_turn_timer", trigger=IntervalTrigger(seconds=self.timeLeft))
+            self._scheduler.reschedule_job(
+                "player_turn_timer", trigger=IntervalTrigger(seconds=self.timeLeft)
+            )
         except Exception as e:
             print(f"Failed to modify job {'player_turn_timer'}: {e}")
 
@@ -73,8 +77,8 @@ class Game(ABC):
     def endGame(self) -> None:
         self.isEnd = True
         self.room.game = None
+        self._scheduler.remove_all_jobs()
         # self.room.onRoomTimer()
-        # self._scheduler.remove_all_jobs()
 
     def getCurrentSymbol(self) -> Cell:
         return self.turn
