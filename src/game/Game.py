@@ -73,8 +73,8 @@ class Game(ABC):
     def endGame(self) -> None:
         self.isEnd = True
         self.room.game = None
-        self.room.onRoomTimer()
-        self._scheduler.remove_all_jobs()
+        # self.room.onRoomTimer()
+        # self._scheduler.remove_all_jobs()
 
     def getCurrentSymbol(self) -> Cell:
         return self.turn
