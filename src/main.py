@@ -13,7 +13,6 @@ from database.data import storage
 from auth.authentication import user_infomation_filter
 from config import *
 
-
 @socketio.event
 @user_infomation_filter
 def connect(user: User, payload: dict):
@@ -43,8 +42,8 @@ def getUser(user: User, payload: dict):
     )
 
 
-@socketio.on("room_list")
-def handle_fetch_rooms(payload):
+# @socketio.on("room_list")
+# def handle_fetch_rooms(payload):
     # get rooms existing
     # rooms = list(storage.rooms.values())
     # pagination
@@ -62,8 +61,48 @@ def handle_fetch_rooms(payload):
     #     }, to=request.sid
     # )
     # socketio.emit("list_of_room", {"rooms": serialization(rooms)}, to=request.sid)
-    pass
+    # pass
 
+@socketio.on("throw_icon")
+@user_infomation_filter
+def throwIcon(user: User, payload: dict):
+    room: Room = storage.rooms.get(payload["room_id"])
+    
+    if room is None:
+        socketio.emit("send_message_failed", {"message": "Some error happend !"}, to=request.sid)
+        return
+        
+    receivers = room.participantIds()
+    if user.sid not in receivers:   
+        socketio.emit("send_message_failed", {"message": "Some error happend !"}, to=request.sid)
+        return
+
+    socketio.emit("received_icon", {
+            "message": payload["message"], 
+            "user_id": user.id
+        }, to=receivers
+    ) 
+
+@socketio.on("send_message")
+@user_infomation_filter
+def sendMessage(user: User, payload: dict):
+    room: Room = storage.rooms.get(payload["room_id"])
+    
+    if room is None:
+        socketio.emit("send_message_failed", {"message": "Some error happend !"}, to=request.sid)
+        return
+        
+    receivers = room.participantIds()
+    if user.sid not in receivers:   
+        socketio.emit("send_message_failed", {"message": "Some error happend !"}, to=request.sid)
+        return
+
+    socketio.emit("receive_message", {
+            "name": user.name,
+            "message": payload["message"], 
+            "user_id": user.id
+        }, to=receivers
+    )
 
 @socketio.on("create_room")
 @user_infomation_filter
@@ -265,7 +304,6 @@ def startGame(user: User, payload: dict):
         },
         to=room.participantIds(),
     )
-
 
 @socketio.on("move")
 @user_infomation_filter

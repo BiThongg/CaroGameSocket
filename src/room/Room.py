@@ -202,7 +202,7 @@ class Room:
             if (participant.status == UserStatus.READY)
             else UserStatus.READY
         )
-
+        
     def participantIds(self) -> list[str]:
         ids = [watcher.sid for watcher in self.guests]
         if self.owner is not None:

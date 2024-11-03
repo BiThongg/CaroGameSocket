@@ -27,7 +27,6 @@ def user_infomation_filter(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         payload: dict = args[0] if args else {}
-
         user_id: str = None
 
         if request.args and "user_id" in request.args:
