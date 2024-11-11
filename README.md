@@ -35,10 +35,8 @@ The architecture of Socket Board Game follows a **client-server** model:
 ## Chapter 3: Algorithm Flow and OOP Design
 
 ### Algorithm Flowchart
-Client : ![image](https://github.com/user-attachments/assets/416aee2c-6107-437e-97f0-c9a1b21b01f8)
-Server: ![image](https://github.com/user-attachments/assets/0dabb4c8-524c-4913-ac00-d3aa629a4a33)
-
-
+![image](https://github.com/user-attachments/assets/416aee2c-6107-437e-97f0-c9a1b21b01f8)
+![image](https://github.com/user-attachments/assets/0dabb4c8-524c-4913-ac00-d3aa629a4a33)
 
 
 ### OOP Design
