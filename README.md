@@ -1,34 +1,84 @@
-# X.O Online Game
-Vui vẻ và thư giãn
+# Socket Board Game
 
-## Purpose and use of Game
-* Giúp giải trí và thư giãn sau ngày dài làm việc mệt mỏi
-* Kích thích sự nhạy bén và quyết đoán, điềm tĩnh trong việc giải quyết vấn đề
+Socket Board Game is an online game developed by our team, integrating two popular board games, Tic-Tac-Toe and Caro (Gomoku), into one module. The game is implemented on a web platform with a client-server architecture using the Socket protocol to ensure real-time communication. This architecture supports multiple players at once, offering a connected and interactive gaming experience.
 
-## Features 
-* Đăng kí tài khoản và tham gia các ván cờ với những players đến từ khắp mọi nơi trên thế giới.
-* Danh sách các phòng với pagination, tìm phòng theo ID, tạo phòng chờ và mời mọi người tham.
-* Nhắn tin trao đổi với nhau với các thành viên trong phòng chờ.
-* Thay đổi trạng thái chuẩn bị trong phòng chờ. Phân quyền độc đáo với ROOM_OWNER, GUEST, WATCHERS với tính năng KICK, SWAP ROOM_OWNER.
-* Lựa chọn tựa game yêu thích với vô vàn chế độ chơi mới lạ.
-* Phân chia thời gian ra cờ cho mỗi người hợp lý.
-* Hệ giống giám sát trò chơi chặt chẽ nhất.
-* Tự quay về phòng chờ khi kết thúc ván đấu. Thống kê lịch sử trận đấu chi tiết.
+## Technologies Used
 
-## Core, Handle
-* Python-Flask & Flask-Socket để tương tác xử lý & can thiệp với phía Client.
-* Trừu tượng hóa hệ thống X.O game vào Core OOP System Hierarchy architecture dễ scalable and maintainable.
-* Abstract polymorphism các đối tượng cốt lõi cho sự mở rộng.
-* Áp dụng Composition & Inheritance hợp lý trong việc thiết kế oop hệ thống.
-* Áp dụng các SOLID Pricipal & Design pattern cùng với sử dụng các giải thuật tối ưu hiệu xuất hệ thốgn và dễ dàng bảo trì
+- **Flask (Python)**: Framework for implementing the backend server.
+- **ReactJS (TypeScript)**: Library for developing the client-side interface.
+- **Socket.IO**: A library that provides WebSocket protocol with extended features for real-time communication.
+- **Deployment**: Ubuntu Server OS for setting up the environment and deploying the project to the web.
+- **Version Control**: Git, GitHub.
 
-## Technologies used
-* Server: Python, Flask, SocketIO
-* Client: Typescript, NextJS, Redux
-  
-## Notes
-* Ứng dụng đang trong quá trình cải thiện và tối ưu.
+## Links
 
-## Author & Resource 
-* N22DCCN040	Đậu Văn Đăng Khoa    N22DCCN051	Nguyễn Thắng Lợi	N22DCCN090	 Nguyễn Minh Triết
-* https://github.com/BiThongg
+- **GitHub Repository**: [Socket Board Game Repository](#)  
+- **Webgame URL**: [Play the Game](#)
+
+---
+
+## Chapter 1: Project Introduction
+
+### Overview
+Socket Board Game is a real-time multiplayer game combining Tic-Tac-Toe and Caro into a unified web interface. It uses a client-server model with Flask handling the backend and ReactJS managing the frontend. Socket.IO ensures smooth real-time communication between the server and the client, enabling players to interact seamlessly within the game.
+
+---
+
+## Chapter 2: Architecture
+
+The architecture of Socket Board Game follows a **client-server** model:
+- **Client**: Built with ReactJS, responsible for handling the user interface, and communicating with the server via Socket.IO for real-time data exchange.
+- **Server**: Flask is used to process game logic and manage player session connections.
+
+---
+
+## Chapter 3: Algorithm Flow and OOP Design
+
+### Algorithm Flowchart
+*Include your flowchart image or diagram here if necessary.*
+
+### OOP Design
+*Link to the detailed OOP design document or image.*
+
+---
+
+## Chapter 4: Backend Core
+
+### Connection Handling
+To ensure data integrity, each time a player connects or reconnects, the server maps the player’s session ID to maintain a stable connection.
+
+### Authentication Handling
+Each player maintains a unique ID on the client side, which is sent in each request. For optimization, the team used decorators to handle access rights.  
+Example: The `join_room` function first passes through the `@user_information_filter` class to ensure proper access control.
+
+### Data Storage Architecture
+Since personal data storage is not necessary, we use a dictionary to store game-related data temporarily.
+
+### Data Synchronization
+Server-side objects are serialized into JSON format to be parsed by the client-side, ensuring smooth data transmission between Python and JavaScript.
+
+---
+
+## Chapter 5: Frontend Core
+
+### React Hooks
+React hooks are used effectively to ensure that the game state and data remain consistent across the application.
+
+### Responsive UI
+The UI is designed to be responsive, ensuring optimal gameplay experience on both desktop and mobile devices.
+
+### Access Control
+The frontend handles access control by restricting which rooms and actions players can interact with based on their roles.
+
+### Module Pattern
+The codebase follows a modular pattern, making it easy to add new game modules in the future.
+
+---
+
+## Chapter 6: Bot Module Core
+
+### Alpha-Beta Pruning Algorithm (Minimax)
+The bot AI is powered by the **alpha-beta pruning** algorithm, which optimizes the minimax algorithm to determine the best move for the bot.  
+
+Example of Min function:
+
