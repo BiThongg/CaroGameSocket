@@ -35,10 +35,15 @@ The architecture of Socket Board Game follows a **client-server** model:
 ## Chapter 3: Algorithm Flow and OOP Design
 
 ### Algorithm Flowchart
-*Include your flowchart image or diagram here if necessary.*
+Client : ![image](https://github.com/user-attachments/assets/416aee2c-6107-437e-97f0-c9a1b21b01f8)
+Server: ![image](https://github.com/user-attachments/assets/0dabb4c8-524c-4913-ac00-d3aa629a4a33)
+
+
+
 
 ### OOP Design
-*Link to the detailed OOP design document or image.*
+[OOP Design Link](https://lucid.app/lucidchart/c264c462-2240-482f-b0e6-2013fe53ffff/edit?invitationId=inv_cdb088a6-a102-427c-8d5b-ef01ce4125b1&page=0_0#) 
+
 
 ---
 
@@ -46,10 +51,15 @@ The architecture of Socket Board Game follows a **client-server** model:
 
 ### Connection Handling
 To ensure data integrity, each time a player connects or reconnects, the server maps the player’s session ID to maintain a stable connection.
+![image](https://github.com/user-attachments/assets/8cec42ad-8044-4e64-8649-39da192cb865)
+
 
 ### Authentication Handling
 Each player maintains a unique ID on the client side, which is sent in each request. For optimization, the team used decorators to handle access rights.  
 Example: The `join_room` function first passes through the `@user_information_filter` class to ensure proper access control.
+![image](https://github.com/user-attachments/assets/64ed5123-1edd-4dd4-8ed1-983fa60a7265)
+
+
 
 ### Data Storage Architecture
 Since personal data storage is not necessary, we use a dictionary to store game-related data temporarily.
