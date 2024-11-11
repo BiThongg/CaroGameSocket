@@ -15,6 +15,14 @@ Socket Board Game is an online game developed by our team, integrating two popul
 - **GitHub Repository**: [Socket Board Game Repository](#)  
 - **Webgame URL**: [Play the Game](#)
 
+## Collaborators
+
+This project is developed and maintained by the following contributors:
+
+- [Nguyễn Minh Triết](https://github.com/MinhTriet0612)
+- [Đậu Văn Đăng Khoa](https://github.com/khoakomlem)
+- [Nguyễn Thắng Lợi](https://github.com/winnguyen1905)
+  
 ---
 
 ## Chapter 1: Project Introduction
@@ -88,7 +96,6 @@ The codebase follows a modular pattern, making it easy to add new game modules i
 ### Alpha-Beta Pruning Algorithm (Minimax)
 The bot AI is powered by the **alpha-beta pruning** algorithm, which optimizes the minimax algorithm to determine the best move for the bot.  
 
-Example of Min function: 
-![image](https://github.com/user-attachments/assets/b5b3b45a-a338-4a2c-854c-864428797f89)
+Example of Min function: ![image](https://github.com/user-attachments/assets/b5b3b45a-a338-4a2c-854c-864428797f89)
 
 
