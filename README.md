@@ -14,6 +14,8 @@ Socket Board Game is an online game developed by our team, integrating two popul
 
 - **GitHub Repository**: [Socket Board Game Repository](https://github.com/orgs/BiThongg/repositories)  
 - **Webgame URL**: [Play the Game](http://khoakomlem-internal.ddns.net:3000/)
+- **Youtube URL**: [LInk](https://www.youtube.com/watch?v=ZEkzfvbafVw&t=307s&ab_channel=WinTV)
+
 
 ## Collaborators
 
