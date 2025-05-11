@@ -342,7 +342,7 @@ def move(user: User, payload: dict):
         socketio.emit(
             "ended_game",
             {
-                "message": f"{user.name} ({serialization(gameEndInfo['symbol'])}) wins !",
+                "message": f"{user.name} ({gameEndInfo['symbol']}) wins !",
                 "winner": serialization(gameEndInfo),
             },
             to=room.participantIds(),
@@ -395,7 +395,7 @@ def botMoveSumoku(payload: dict):
         socketio.emit(
             "ended_game",
             {
-                "message": f"BOT ({serialization(gameEndInfo['symbol'])}) wins !",
+                "message": f"BOT ({gameEndInfo['symbol']}) wins !",
                 "winner": serialization(gameEndInfo),
             },
             to=room.participantIds(),

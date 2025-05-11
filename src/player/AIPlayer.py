@@ -7,12 +7,14 @@ from util.cell import Cell
 from game.CasualGame import *
 from game.TicTacToe import *
 from typing import Type, Callable, Dict
+from model.SumoKuAI import SumokuAI
 
 
 class AIPlayer(Player):
     def __init__(self, user: User | None):
         super().__init__(user)
         self.caroModel = CaroModel()
+        self.sumokuAI = SumokuAI()
         self.tictactoeModel = TictactoeModel()
 
     def makeMoveFactory(self) -> Callable[[], str]:
@@ -28,15 +30,14 @@ class AIPlayer(Player):
     def makeMoveSumoku(self):
         board = self.deepCopyBoard(self.game.board)
         point: Point = None
-        if self.symbol == Cell.X:
-            (a, y, x) = self.caroModel.max_alpha_beta(-2, 2, board)
-            point = Point(x, y)
-            super().move(point)
-        else:
-            (a, y, x) = self.caroModel.min_alpha_beta(-2, 2, board)
-            point = Point(x, y)
-            super().move(point)
 
+        best_move = self.sumokuAI.alpha_beta(board, self.symbol)
+
+        if best_move:
+            y, x = best_move
+            point = Point(x, y)
+            super().move(point)
+            
         self.game.latestPoint = point
 
     def makeMoveTictactoe(self):
