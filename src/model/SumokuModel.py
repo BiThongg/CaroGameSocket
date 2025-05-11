@@ -11,6 +11,7 @@ class CaroModel:
     def __init__(self):
         pass
 
+    # test
     def actions(self, board):
         possible_actions = set()
 
