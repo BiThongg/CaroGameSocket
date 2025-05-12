@@ -47,7 +47,7 @@ class TicTacToe(Game):
             if count >= 3:
                 movedPoints.append(self.latestPoint)
                 return {
-                    "symbol": currentCell,
+                    "symbol": currentCell.name,
                     "points": movedPoints,
                 }
         return None
@@ -56,7 +56,7 @@ class TicTacToe(Game):
         result: dict = self.isEndGame()
         if result is not None:
             for player in self.players:
-                if player.symbol == result['symbol']:
+                if player.symbol.name == result['symbol']:
                     return result
         return None
 
