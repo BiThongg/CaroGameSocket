@@ -1,11 +1,23 @@
 from typing import List
-
+from util.point import Point
 from util.cell import Cell
 
 
 class TictactoeModel:
     def __init__(self):
         pass
+
+    def predict_move(self, board, symbol):
+        point: Point = None
+        if symbol == Cell.X:
+            (a, y, x) = self.max_alpha_beta(-2, 2, board)
+            point = Point(x, y)
+            return point
+        else:
+            (a, y, x) = self.min_alpha_beta(-2, 2, board)
+            point = Point(x, y)
+            return point
+        return None
 
     def checkWinner(self, board: List[List[Cell]]):
         for i in range(3):
