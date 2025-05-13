@@ -1,125 +1,123 @@
 from util.cell import Cell
+from util.point import Point
 from model.Heuristic import Heuristic
 import random
 
 class SumokuAI:
     def __init__(self):
         self.heuristic = Heuristic()
-        self.MAX_DEPTH = 3 # Độ sâu tối đa 
+        self.MAX_DEPTH = 5
         self.opponent_player = {Cell.X: Cell.O, Cell.O: Cell.X}
-    
-    # Thuật toán alpha-beta để tìm nước đi tối ưu cho người chơi
-    def alpha_beta(self, board, player):
-        # Gọi hàm đánh giá điểm số cho từng ô trên bàn cờ (heuristic)
-        self.heuristic.evaluate_each_cell(board, player)
+        self.empty_cells = 0
 
-        # Lấy danh sách các ô có điểm số cao nhất
-        ls = self.heuristic.get_optimal_list()
+    def predict_move(self, board, symbol):
+        point: Point = None
 
-        # Lưu trữ giá trị lớn nhất (-inf)
-        _max = float('-inf')
+        best_move = self.alpha_beta(board, symbol)
 
-        # Lưu danh sách các ô có điểm số lớn nhất 
-        ls_choose = []
-    
-        # Duyệt qua từng ô trong danh sách tối ưu
-        for y, x in ls:
-            board[y][x] = player  # Giả sử AI đánh vào ô này
-            _value = self.min_value(board, float('-inf'), float('inf'), 0, self.opponent_player[player]) # Gọi hàm min_value để giả lập nước đi của đối thủ
+        if best_move:
+            y, x = best_move
+            point = Point(x, y)
+            return point
             
-            # Nếu giá trị lớn hơn giá trị lớn nhất hiện tại, cập nhật giá trị lớn nhất và danh sách các ô
+        return None
+
+    def set_board(self, board):
+        self.empty_cells = sum(row.count(Cell.NONE) for row in board)
+
+    def alpha_beta(self, board, player):
+        self.heuristic.evaluate_each_cell(board, player)
+        ls = self.heuristic.get_optimal_list()
+        _max = float('-inf')
+        ls_choose = []
+
+        for y, x in ls:
+            self.make_move(board, y, x, player)
+
+            _value = self.min_value(board, float('-inf'), float('inf'), 0, self.opponent_player[player], (y, x))
+
             if _max < _value:
                 _max = _value
                 ls_choose.clear()
                 ls_choose.append((y, x))
-            elif _max == _value: 
+            elif _max == _value:
                 ls_choose.append((y, x))
-            board[y][x] = Cell.NONE # Hoàn tác nước đi
 
-        # Chọn ngẫu nhiên một nước đi từ danh sách các nước lớn nhất (bằng nhau)
+            self.undo_move(board, y, x)
+
         return random.choice(ls_choose)
 
-    # Hàm tính giá trị nhỏ nhất trong thuật toán alpha-beta
-    # Được gọi khi giả lập nước đi của người chơi muốn giảm điểm số của AI
-    def min_value(self, board, alpha, beta, depth, player):
-        # Kiểm tra điều kiện dừng: độ sâu tối đa, có người thắng, hoặc bàn cờ đầy
-        if depth >= self.MAX_DEPTH or self.check_winner(board, self.opponent_player[player]) or self.is_over(board):
-            return self.heuristic.evaluate_board(board) # Đánh giá điểm của toàn bộ bàn cờ (heuristic)
-
-        # Đánh giá điểm số cho từng ô trên bàn cờ
-        self.heuristic.evaluate_each_cell(board, self.opponent_player[player])
-
-        # Lấy danh sách các ô có điểm số cao nhất
-        ls = self.heuristic.get_optimal_list() 
-
-        # Duyệt qua từng ô trong danh sách tối ưu
-        for y, x in ls:
-            board[y][x] = self.opponent_player[player] # Giả sử người chơi đánh vào ô này   
-            # Lấy giá trị min giữa các node con, các node con đang nằm ở tầng max
-            beta = min(beta, self.max_value(board, alpha, beta, depth + 1, player))
-            board[y][x] = Cell.NONE # Hoàn tác nước đi
-            if alpha >= beta:
-                break # Cắt tỉa nhánh (pruning)
-        return beta
-    
-    # Hàm tính giá trị lớn nhất trong thuật toán alpha-beta
-    # Được gọi khi giả lập nước đi AI muốn tăng điểm số của mình
-    def max_value(self, board, alpha, beta, depth, player):
-        # Kiểm tra điều kiện dừng: độ sâu tối đa, có người thắng, hoặc bàn cờ đầy
-        if depth >= self.MAX_DEPTH or self.check_winner(board, player) or self.is_over(board):
+    def min_value(self, board, alpha, beta, depth, player, last_move):
+        if depth >= self.MAX_DEPTH or self.check_winner(board, self.opponent_player[player], last_move) or self.is_over():
             return self.heuristic.evaluate_board(board)
-        
-        # Đánh giá điểm số cho từng ô trên bàn cờ
-        self.heuristic.evaluate_each_cell(board, player)
 
-        # Lấy danh sách các ô có điểm số cao nhất
+        self.heuristic.evaluate_each_cell(board, self.opponent_player[player])
         ls = self.heuristic.get_optimal_list()
 
-        # Duyệt qua từng ô trong danh sách tối ưu
         for y, x in ls:
-            board[y][x] = player # Giả sử AI đánh vào ô này
-            # Lấy giá trị max giữa các node con, các node con đang nằm ở tầng min 
-            alpha = max(alpha, self.min_value(board, alpha, beta, depth + 1, self.opponent_player[player]))
-            board[y][x] = Cell.NONE # Hoàn tác nước đi
+            self.make_move(board, y, x, self.opponent_player[player])
+
+            beta = min(beta, self.max_value(board, alpha, beta, depth + 1, player, (y, x)))
+
+            self.undo_move(board, y, x)
+
             if alpha >= beta:
-                break # Cắt tỉa nhánh (pruning)
-        return alpha    
+                break
+        return beta
 
-    # Kiểm tra xem bàn cờ có còn ô trống hay không
-    def is_over(self, board):
-        for y in range(len(board)):
-            for x in range(len(board[y])):
-                if board[y][x] == Cell.NONE:
-                    return False
-        return True
+    def max_value(self, board, alpha, beta, depth, player, last_move):
+        if depth >= self.MAX_DEPTH or self.check_winner(board, player, last_move) or self.is_over():
+            return self.heuristic.evaluate_board(board)
 
-    # Kiểm tra xem người chơi đã thắng hay không
-    def check_winner(self, board, player):
+        self.heuristic.evaluate_each_cell(board, player)
+        ls = self.heuristic.get_optimal_list()
+
+        for y, x in ls:
+            self.make_move(board, y, x, player)
+
+            alpha = max(alpha, self.min_value(board, alpha, beta, depth + 1, self.opponent_player[player], (y, x)))
+
+            self.undo_move(board, y, x)
+
+            if alpha >= beta:
+                break
+        return alpha
+
+    def is_over(self):
+        return self.empty_cells == 0
+
+    # Optimization: Check win condition using only the last move
+    def check_winner(self, board, player, last_move):
+        y, x = last_move
         size = len(board)
-        directions = [(1, 0), (1, 1), (0, 1), (-1, 1)]  # (dy, dx): ↓, ↘, →, ↗
+        directions = [(1, 0), (0, 1), (1, 1), (-1, 1)]  # vertical, horizontal, main diag, anti diag
 
-        for y in range(size):     
-            for x in range(size):   
-                if board[y][x] != player:
-                    continue
-                
-                # Kiểm tra từng hướng
-                for dy, dx in directions:
-                    count = 1
-                    for k in range(1, 5):
-                        ny = y + dy * k
-                        nx = x + dx * k
+        for dy, dx in directions:
+            count = 1
 
-                        if 0 <= ny < size and 0 <= nx < size and board[ny][nx] == player:
-                            count += 1
-                        else:
-                            break
-                    
-                    # Nếu có 5 ô liên tiếp, người chơi thắng
-                    if count == 5:
-                        return True
+            # Check forward
+            ny, nx = y + dy, x + dx
+            while 0 <= ny < size and 0 <= nx < size and board[ny][nx] == player:
+                count += 1
+                ny += dy
+                nx += dx
+
+            # Check backward
+            ny, nx = y - dy, x - dx
+            while 0 <= ny < size and 0 <= nx < size and board[ny][nx] == player:
+                count += 1
+                ny -= dy
+                nx -= dx
+
+            if count >= 5:
+                return True
 
         return False
 
+    def make_move(self, board, y, x, player):
+        board[y][x] = player
+        self.empty_cells -= 1
 
-    
+    def undo_move(self, board, y, x):
+        board[y][x] = Cell.NONE
+        self.empty_cells += 1
