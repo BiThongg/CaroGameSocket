@@ -6,7 +6,7 @@ import random
 class SumokuAI:
     def __init__(self):
         self.heuristic = Heuristic()
-        self.MAX_DEPTH = 5
+        self.MAX_DEPTH = 3
         self.opponent_player = {Cell.X: Cell.O, Cell.O: Cell.X}
         self.empty_cells = 0
 
