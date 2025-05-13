@@ -5,12 +5,13 @@ import random
 class SumokuAI:
     def __init__(self):
         self.heuristic = Heuristic()
-        self.MAX_DEPTH = 3 # Độ sâu tối đa 
+        self.MAX_DEPTH = 4 # Độ sâu tối đa 
         self.opponent_player = {Cell.X: Cell.O, Cell.O: Cell.X}
     
     # Thuật toán alpha-beta để tìm nước đi tối ưu cho người chơi
     def alpha_beta(self, board, player):
-        # Gọi hàm đánh giá điểm số cho từng ô trên bàn cờ (heuristic)
+
+        # Gọi hàm đánh giá điểm số cho từng ô trên bàn cờ 
         self.heuristic.evaluate_each_cell(board, player)
 
         # Lấy danh sách các ô có điểm số cao nhất
@@ -25,8 +26,10 @@ class SumokuAI:
         # Duyệt qua từng ô trong danh sách tối ưu
         for y, x in ls:
             board[y][x] = player  # Giả sử AI đánh vào ô này
-            _value = self.min_value(board, float('-inf'), float('inf'), 0, self.opponent_player[player]) # Gọi hàm min_value để giả lập nước đi của đối thủ
-            
+
+            # Gọi đệ quy xuống min_value để mô phỏng phản ứng của người chơi, trả về điểm số tương ứng
+            _value = self.min_value(board, float('-inf'), float('inf'), 0, self.opponent_player[player]) 
+
             # Nếu giá trị lớn hơn giá trị lớn nhất hiện tại, cập nhật giá trị lớn nhất và danh sách các ô
             if _max < _value:
                 _max = _value
@@ -42,9 +45,10 @@ class SumokuAI:
     # Hàm tính giá trị nhỏ nhất trong thuật toán alpha-beta
     # Được gọi khi giả lập nước đi của người chơi muốn giảm điểm số của AI
     def min_value(self, board, alpha, beta, depth, player):
+
         # Kiểm tra điều kiện dừng: độ sâu tối đa, có người thắng, hoặc bàn cờ đầy
         if depth >= self.MAX_DEPTH or self.check_winner(board, self.opponent_player[player]) or self.is_over(board):
-            return self.heuristic.evaluate_board(board) # Đánh giá điểm của toàn bộ bàn cờ (heuristic)
+            return self.heuristic.evaluate_board(board) # Đánh giá điểm của toàn bộ bàn cờ 
 
         # Đánh giá điểm số cho từng ô trên bàn cờ
         self.heuristic.evaluate_each_cell(board, self.opponent_player[player])
@@ -52,14 +56,20 @@ class SumokuAI:
         # Lấy danh sách các ô có điểm số cao nhất
         ls = self.heuristic.get_optimal_list() 
 
-        # Duyệt qua từng ô trong danh sách tối ưu
+        # Duyệt qua từng ô trong danh sách
         for y, x in ls:
             board[y][x] = self.opponent_player[player] # Giả sử người chơi đánh vào ô này   
-            # Lấy giá trị min giữa các node con, các node con đang nằm ở tầng max
+
+            # Gọi đệ quy xuống max_value để mô phỏng lượt đi của AI, sau đó lấy min trong các giá trị trả về để cập nhật điểm tốt nhất cho người chơi.
             beta = min(beta, self.max_value(board, alpha, beta, depth + 1, player))
+
             board[y][x] = Cell.NONE # Hoàn tác nước đi
+
+            # Alpha (điểm tốt nhất của Max) đã lớn hn hoặc bằng Beta (điểm tốt nhất hiện tại của Min),
+            # Max đã có lựa chọn tốt hơn ở nhánh kháơc nên không cần xét tiếp các lựa chọn còn lại của Min,
             if alpha >= beta:
                 break # Cắt tỉa nhánh (pruning)
+        
         return beta
     
     # Hàm tính giá trị lớn nhất trong thuật toán alpha-beta
@@ -67,7 +77,7 @@ class SumokuAI:
     def max_value(self, board, alpha, beta, depth, player):
         # Kiểm tra điều kiện dừng: độ sâu tối đa, có người thắng, hoặc bàn cờ đầy
         if depth >= self.MAX_DEPTH or self.check_winner(board, player) or self.is_over(board):
-            return self.heuristic.evaluate_board(board)
+            return self.heuristic.evaluate_board(board) # Đánh giá điểm của toàn bộ bàn cờ 
         
         # Đánh giá điểm số cho từng ô trên bàn cờ
         self.heuristic.evaluate_each_cell(board, player)
@@ -78,11 +88,17 @@ class SumokuAI:
         # Duyệt qua từng ô trong danh sách tối ưu
         for y, x in ls:
             board[y][x] = player # Giả sử AI đánh vào ô này
-            # Lấy giá trị max giữa các node con, các node con đang nằm ở tầng min 
+
+            # Gọi đệ quy xuống min_value để mô phỏng lượt đi của người chơi, sau đó lấy max trong các giá trị trả về để cập nhật điểm tốt nhất cho AI.
             alpha = max(alpha, self.min_value(board, alpha, beta, depth + 1, self.opponent_player[player]))
+            
             board[y][x] = Cell.NONE # Hoàn tác nước đi
-            if alpha >= beta:
+            
+            # Alpha (điểm tốt nhất của Max) đã lớn hơn hoặc bằng Beta (điểm tốt nhất hiện tại của Min),
+            # Max đã có lựa chọn tốt hơn ở nhánh khác nên không cần xét tiếp các lựa chọn còn lại của Min,
+            if alpha >= beta:     
                 break # Cắt tỉa nhánh (pruning)
+        
         return alpha    
 
     # Kiểm tra xem bàn cờ có còn ô trống hay không

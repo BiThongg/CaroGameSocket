@@ -1,8 +1,10 @@
 from util.cell import Cell
+from util.help import Help
 import re
 
 class Heuristic:
     def __init__(self):
+        self.help = Help()
         self.eval_board = [[0 for _ in range(14)] for _ in range(14)]
 
     replace_cell = {Cell.X: 1, Cell.O: 2, Cell.NONE: 0}
@@ -30,6 +32,7 @@ class Heuristic:
         "22222"
     ]
 
+    # Điểm cho từng mẫu pattern tương ứng
     point = [
         4, 4, 4,
         8, 8, 8,
@@ -74,8 +77,11 @@ class Heuristic:
 
     # Đánh giá điểm toàn bộ bàn cờ dựa trên các mẫu (pattern)
     def evaluate_board(self, board):
+
         lines = self.extract_all_lines(board)
+        
         total_score = 0
+        
         for i in range(len(self.case_user)):
             pattern_user = self.case_user[i]
             pattern_ai = self.case_ai[i]
@@ -116,10 +122,12 @@ class Heuristic:
                     for i in range(5):
                         if board[y][x + i] == Cell.NONE:
                             # Tính điểm phòng thủ hoặc tấn công dựa trên người chơi
-                            if count_ai == 0:
+                            if count_ai == 0: # chỉ có những ô của người chơi
+                                # Nếu AI đang đánh giá thì cộng điểm phòng thủ, nếu người chơi đang đánh giá thì cộng điểm tấn công
                                 score = self.defense_score[count_user] if player == Cell.O else self.attack_score[count_user]
                                 self.eval_board[y][x + i] += score
-                            elif count_user == 0:
+                            elif count_user == 0: # chỉ có những ô của AI
+                                # Nếu người chơi đang đánh giá thì cộng điểm phòng thủ, nếu AI đang đánh giá thì cộng điểm tấn công
                                 score = self.defense_score[count_ai] if player == Cell.X else self.attack_score[count_ai]
                                 self.eval_board[y][x + i] += score
                             
@@ -185,7 +193,7 @@ class Heuristic:
                                     self.defense_score[count_ai] if player == Cell.X else self.attack_score[count_ai]
                                 )
                             if count_ai == 4 or count_user == 4:
-                                self.eval_board[y - i][x + i] *= 2
+                                self.eval_board[y - i][x + i] *= 2                      
 
     # Lấy giá trị đánh giá của ô tại vị trí (y, x)
     def get_eval_cell_value(self, y, x):
@@ -195,7 +203,8 @@ class Heuristic:
     def length_num(self, n):
         return len(str(abs(int(n)))) if n != float('-inf') else 1
 
-    # Lấy danh sách tối đa các ô có điểm số cao nhất (max = 8 ô)
+    # Sau khi đánh giá điểm từng ô
+    # Lấy danh sách tối đa các ô có điểm số cao nhất (max = 8)
     def get_optimal_list(self):
         size = 8
         max_value_list = [float('-inf')] * size
