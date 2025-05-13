@@ -13,45 +13,29 @@ from model.SumoKuAI import SumokuAI
 class AIPlayer(Player):
     def __init__(self, user: User | None):
         super().__init__(user)
-        self.caroModel = CaroModel()
-        self.sumokuAI = SumokuAI()
-        self.tictactoeModel = TictactoeModel()
-
-    def makeMoveFactory(self) -> Callable[[], str]:
-        makeMoveFactory: Dict[Type, Callable[[], str]] = {
-            CasualGame.__name__: self.makeMoveSumoku,
-            TicTacToe.__name__: self.makeMoveTictactoe
+        self.models = {
+            CasualGame.__name__: SumokuAI(),
+            TicTacToe.__name__: TictactoeModel(),
         }
-        return makeMoveFactory[self.game.__class__.__name__]
+        print(self.models, self.game)
 
     def makeMove(self):
-        self.makeMoveFactory()()
+        if self.game is None:
+            raise ValueError("No game has been set for the AIPlayer.")
 
-    def makeMoveSumoku(self):
-        board = self.deepCopyBoard(self.game.board)
-        point: Point = None
+        game_name = self.game.__class__.__name__
+        if game_name not in self.models:
+            raise ValueError(f"No model available for game: {game_name}")
 
-        best_move = self.sumokuAI.alpha_beta(board, self.symbol)
+        model = self.models[game_name]
+        cloneboard = self.deepCopyBoard(self.game.board)
+        move = model.predict_move(cloneboard, self.symbol)
 
-        if best_move:
-            y, x = best_move
-            point = Point(x, y)
-            super().move(point)
-            
-        self.game.latestPoint = point
-
-    def makeMoveTictactoe(self):
-        board = self.deepCopyBoard(self.game.board)
-        point: Point = None
-        if self.symbol == Cell.X:
-            (a, y, x) = self.tictactoeModel.max_alpha_beta(-2, 2, board)
-            point = Point(x, y)
-            super().move(point)
+        if move:
+            super().move(move)
+            self.game.latestPoint = move
         else:
-            (a, y, x) = self.tictactoeModel.min_alpha_beta(-2, 2, board)
-            point = Point(x, y)
-            super().move(point)
-        self.game.latestPoint = point
+            raise Exception("No valid moves available.")
 
     def deepCopyBoard(self, board):
         return [row[:] for row in board]
