@@ -47,21 +47,21 @@ class SumokuAI:
     def min_value(self, board, alpha, beta, depth, player):
 
         # Kiểm tra điều kiện dừng: độ sâu tối đa, có người thắng, hoặc bàn cờ đầy
-        if depth >= self.MAX_DEPTH or self.check_winner(board, self.opponent_player[player]) or self.is_over(board):
+        if depth >= self.MAX_DEPTH or self.check_winner(board, player) or self.is_over(board):
             return self.heuristic.evaluate_board(board) # Đánh giá điểm của toàn bộ bàn cờ 
 
         # Đánh giá điểm số cho từng ô trên bàn cờ
-        self.heuristic.evaluate_each_cell(board, self.opponent_player[player])
+        self.heuristic.evaluate_each_cell(board, player)
 
         # Lấy danh sách các ô có điểm số cao nhất
         ls = self.heuristic.get_optimal_list() 
 
         # Duyệt qua từng ô trong danh sách
         for y, x in ls:
-            board[y][x] = self.opponent_player[player] # Giả sử người chơi đánh vào ô này   
+            board[y][x] = player # Giả sử người chơi đánh vào ô này   
 
             # Gọi đệ quy xuống max_value để mô phỏng lượt đi của AI, sau đó lấy min trong các giá trị trả về để cập nhật điểm tốt nhất cho người chơi.
-            beta = min(beta, self.max_value(board, alpha, beta, depth + 1, player))
+            beta = min(beta, self.max_value(board, alpha, beta, depth + 1, self.opponent_player[player]))
 
             board[y][x] = Cell.NONE # Hoàn tác nước đi
 
@@ -75,6 +75,7 @@ class SumokuAI:
     # Hàm tính giá trị lớn nhất trong thuật toán alpha-beta
     # Được gọi khi giả lập nước đi AI muốn tăng điểm số của mình
     def max_value(self, board, alpha, beta, depth, player):
+
         # Kiểm tra điều kiện dừng: độ sâu tối đa, có người thắng, hoặc bàn cờ đầy
         if depth >= self.MAX_DEPTH or self.check_winner(board, player) or self.is_over(board):
             return self.heuristic.evaluate_board(board) # Đánh giá điểm của toàn bộ bàn cờ 

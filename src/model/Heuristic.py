@@ -204,9 +204,9 @@ class Heuristic:
         return len(str(abs(int(n)))) if n != float('-inf') else 1
 
     # Sau khi đánh giá điểm từng ô
-    # Lấy danh sách tối đa các ô có điểm số cao nhất (max = 8)
+    # Lấy danh sách tối đa các ô có điểm số cao nhất (max = 5)
     def get_optimal_list(self):
-        size = 8
+        size = 5
         max_value_list = [float('-inf')] * size
         max_cell_list = [(-1, -1) for _ in range(size)]  # (y, x)
 
