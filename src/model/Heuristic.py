@@ -9,16 +9,7 @@ class Heuristic:
 
     opponent_player = {Cell.X: Cell.O, Cell.O: Cell.X}
 
-    point = [
-        4, 4, 4,
-        8, 8, 8,
-        8, 8, 8, 8, 8, 8,
-        8,
-        500, 500, 500, 500, 500, 500, 500,
-        1000, 1000, 1000, 1000, 1000, 1000,
-        100000
-    ]
-
+    # PATTERN MATCHING
     case_user = [
         "11001", "10101", "10011",
         "00110", "01010", "01100",
@@ -39,14 +30,17 @@ class Heuristic:
         "22222"
     ]
 
-    defense_score = [0, 1, 9, 81, 729, 6534]
-    attack_score = [0, 3, 24, 192, 1536, 12288]
+    point = [
+        4, 4, 4,
+        8, 8, 8,
+        8, 8, 8, 8, 8, 8,
+        8,
+        500, 500, 500, 500, 500, 500, 500,
+        1000, 1000, 1000, 1000, 1000, 1000,
+        100000
+    ]
 
-    # Đếm số lần xuất hiện của một mẫu (pattern) trong chuỗi văn bản
-    def count_occurrences(self, text, pattern):
-        return len(re.findall(pattern, text))
-
-    # Trích xuất tất cả các dòng (ngang, dọc, chéo chính, chéo phụ) từ bàn cờ
+    # Trích xuất tất cả các dòng (ngang, dọc, chéo chính, chéo phụ) từ bàn cờ thành một chuỗi
     def extract_all_lines(self, board):
         res = ";"
         size = len(board)
@@ -72,9 +66,13 @@ class Heuristic:
         for i in range(size - 5, 0, -1):
             res += ''.join(str(self.replace_cell[board[j][i + size - j - 1]]) for j in range(size - 1, i - 1, -1)) + ";"
 
-        return res
+        return res   
 
-    # Đánh giá toàn bộ bàn cờ dựa trên các mẫu (pattern)
+    # Đếm số lần xuất hiện của một mẫu (pattern) trong chuỗi
+    def count_occurrences(self, text, pattern):
+        return len(re.findall(pattern, text))
+
+    # Đánh giá điểm toàn bộ bàn cờ dựa trên các mẫu (pattern)
     def evaluate_board(self, board):
         lines = self.extract_all_lines(board)
         total_score = 0
@@ -83,9 +81,16 @@ class Heuristic:
             pattern_ai = self.case_ai[i]
             pattern_point = self.point[i]
 
+            # Cộng điểm nếu là pattern của AI và trừ điểm nếu là pattern của người chơi
             total_score += pattern_point * self.count_occurrences(lines, pattern_ai)
             total_score -= pattern_point * self.count_occurrences(lines, pattern_user)
-        return total_score
+
+        # Nếu điểm lớn hơn 0, AI đang có lợi thế và ngược lại
+        return total_score  
+
+    # ATTACKING AND DEFENSE SCORE
+    defense_score = [0, 1, 9, 81, 729, 6534]
+    attack_score = [0, 3, 24, 192, 1536, 12288]
 
     # Đặt lại bảng đánh giá về giá trị 0
     def reset_eval_board(self):
@@ -101,12 +106,12 @@ class Heuristic:
         # Hàng ngang 
         for y in range(size):
             for x in range(size - 4):
-                # Đếm số ô của AI và người	# Đếm số ô của AI (O) trong 5 ô liên tiếp
+                # Đếm số ô của AI (O) trong 5 ô liên tiếp
                 count_ai = sum(1 for i in range(5) if board[y][x + i] == Cell.O)
                 # Đếm số ô của người chơi (X) trong 5 ô liên tiếp
                 count_user = sum(1 for i in range(5) if board[y][x + i] == Cell.X)
 
-                # Chỉ tính điểm khi không có cả X và O trong cùng một dòng và số lượng X, O khác nhau
+                # Chỉ tính điểm khi không có cả X và O trong cùng một dòng, tức là chỉ có một loại ô + các ô trống
                 if count_ai * count_user == 0 and count_ai != count_user:
                     for i in range(5):
                         if board[y][x + i] == Cell.NONE:
@@ -120,7 +125,7 @@ class Heuristic:
                             
                             # Nhân đôi điểm nếu có 4 ô liên tiếp (gần thắng)
                             if count_ai == 4 or count_user == 4:
-                                self.eval_board[y][x + i] *= 2
+                                self.eval_board[y][x + i] *= 2  
 
         # Hàng dọc 
         for x in range(size):
@@ -190,7 +195,7 @@ class Heuristic:
     def length_num(self, n):
         return len(str(abs(int(n)))) if n != float('-inf') else 1
 
-    # Lấy danh sách các ô tối ưu (có điểm số cao nhất) để AI chọn
+    # Lấy danh sách tối đa các ô có điểm số cao nhất (max = 8 ô)
     def get_optimal_list(self):
         size = 8
         max_value_list = [float('-inf')] * size
