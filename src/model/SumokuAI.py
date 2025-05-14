@@ -10,7 +10,7 @@ class SumokuAI(CaroModel):
     def __init__(self):
         super().__init__()
         self.heuristic = Heuristic()
-        self.MAX_DEPTH = 7
+        self.MAX_DEPTH = 5
         self.opponent_player = {Cell.X: Cell.O, Cell.O: Cell.X}
         self.empty_cells = 0
         self.zobrist = ZobristTable(14, 14, 3)
