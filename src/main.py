@@ -13,7 +13,6 @@ from util.serialize import serialization
 from database.data import storage
 from auth.authentication import user_infomation_filter
 from config import *
-from cheating_detection import CheatDetectionFeatures
 import pandas as pd
 from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt

@@ -1,7 +1,6 @@
 from functools import wraps
 from datetime import datetime
 from .UserFeatureCache import user_feature_cache, spam_feature_cache, cheat_feature_cache
-from .CheatDetectionFeatures import CheatDetectionFeatures
 import numpy as np
 from sklearn.linear_model import LogisticRegression
 import joblib
