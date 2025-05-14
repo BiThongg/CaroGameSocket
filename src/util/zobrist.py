@@ -22,7 +22,7 @@ class ZobristTable:
         self.MAX_CACHE_SIZE = 1000000  # Limit cache size to 1 million entries
         
         self.cache = {}
-        if exists("zobrist_cache.txt"):
+        if exists("zobrist_cache.txt") and self.cache == {}:
             self.load_cache("zobrist_cache.txt")
         
         self.table: dict[tuple[int, int], int] = {}
@@ -43,9 +43,8 @@ class ZobristTable:
     def get_hash(self, x: int, y: int, piece: int) -> int:
         return self.table.get((piece, y * self.width + x), 0)
     
-    def update_hash(self, current_hash, x, y, piece: Cell) -> int:
-        value = 0 if piece == Cell.X else 1 if piece == Cell.O else 0
-        return current_hash ^ self.get_hash(x, y, value) if piece != Cell.NONE else current_hash
+    def update_hash(self, current_hash, x, y, cell: Cell) -> int:
+        return current_hash ^ self.get_hash(x, y, cell.toInt())
     
     def load_generated_table(self, file_path):
         try:
@@ -95,28 +94,26 @@ class ZobristTable:
         current_hash = 0
         for y in range(self.height):
             for x in range(self.width):
-                piece = board[y][x]
-                if piece != Cell.NONE:
-                    piece_value = 0 if piece == Cell.X else 1
-                    current_hash ^= self.get_hash(x, y, piece_value)
+                cell = board[y][x]
+                current_hash ^= self.get_hash(x, y, cell.toInt())
         return current_hash
     
     # Lets cache :bruh: 🤫🤫
-    def lets_cache(self, current_hash, x, y, piece, value):
-        new_hash = self.update_hash(current_hash, x, y, piece)
+    def lets_cache(self, current_hash, x, y, cell, value):
+        new_hash = self.update_hash(current_hash, x, y, cell)
 
         with self._cache_lock:
             if len(self.cache) >= self.MAX_CACHE_SIZE:
                 self.cache = dict(list(self.cache.items())[-self.MAX_CACHE_SIZE//2:])
             self.cache[new_hash] = value
-            if len(self.cache) % 10 == 0:  # Save less frequently
+            if len(self.cache) % 100 == 0:  # Save less frequently
                 Thread(target=self.save_cache, args=("zobrist_cache.txt",), daemon=True).start()
 
-    def get_cache(self, current_hash, x, y, piece):
-        new_hash = self.update_hash(current_hash, x, y, piece)
+    def get_cache(self, current_hash, x, y, cell):
+        new_hash = self.update_hash(current_hash, x, y, cell)
         value = self.cache.get(new_hash, None)
         if value is not None:
-            print("Cache hit for", x, y, piece, ":", value)
+            print("Cache hit for", (y, x), cell, ":", value)
             return value
         return None
 

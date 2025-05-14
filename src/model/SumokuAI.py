@@ -10,7 +10,7 @@ class SumokuAI(CaroModel):
     def __init__(self):
         super().__init__()
         self.heuristic = Heuristic()
-        self.MAX_DEPTH = 3
+        self.MAX_DEPTH = 10
         self.opponent_player = {Cell.X: Cell.O, Cell.O: Cell.X}
         self.empty_cells = 0
         self.transposition_table = {}
@@ -54,10 +54,12 @@ class SumokuAI(CaroModel):
         if depth >= self.MAX_DEPTH or self.check_winner(board, player, last_move) or self.is_over():
             return self.heuristic.evaluate_board(board)
         
+        
         # Check transposition table
         cached_value = self.zobrist.get_cache(hashed_board, last_move[1], last_move[0], player)
         if cached_value is not None:
             return cached_value
+        
 
         self.heuristic.evaluate_each_cell(board, player)
         ls = self.heuristic.get_optimal_list()
@@ -73,17 +75,22 @@ class SumokuAI(CaroModel):
                 break
 
         # Store in transposition table
+        print(f"New move {last_move} {player}, depth: {depth}, [{self.zobrist.update_hash(hashed_board, last_move[1], last_move[0], player)}]={value}")
         self.zobrist.lets_cache(hashed_board, last_move[1], last_move[0], player, value)
         return value
 
     def max_value(self, board, alpha, beta, depth, player, hashed_board, last_move) -> float:
         if depth >= self.MAX_DEPTH or self.check_winner(board, player, last_move) or self.is_over():
             return self.heuristic.evaluate_board(board)
+        
+        
 
         # Check transposition table
         cached_value = self.zobrist.get_cache(hashed_board, last_move[1], last_move[0], player)
         if cached_value is not None:
             return cached_value
+        
+        
 
         self.heuristic.evaluate_each_cell(board, player)
         ls = self.heuristic.get_optimal_list()
@@ -97,6 +104,8 @@ class SumokuAI(CaroModel):
 
             if alpha >= beta:
                 break
+            
+        print(f"New move {last_move} {player}, depth: {depth}, [{self.zobrist.update_hash(hashed_board, last_move[1], last_move[0], player)}]={value}")
 
         # Store in transposition table
         self.zobrist.lets_cache(hashed_board, last_move[1], last_move[0], player, value)
