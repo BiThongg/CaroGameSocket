@@ -379,7 +379,16 @@ def botMoveSumoku(payload: dict):
         )
         return
 
-    player.makeMove()
+    try:
+        player.makeMove()
+    except Exception as e:
+        socketio.emit(
+            "bot_move_failed",
+            {"message": f"Bot move failed: {str(e)}"},
+            to=room.participantIds(),
+        )
+        return
+    
 
     gameEndInfo: dict = game.getGameEndInfo()
 
