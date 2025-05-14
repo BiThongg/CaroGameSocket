@@ -426,6 +426,10 @@ def botMoveSumoku(payload: dict):
 #     }, to=room.participantIds())
 if __name__ == "__main__":
     try:
-        socketio.run(app, debug=False)
+        socketio.run(
+            app,
+            host="0.0.0.0",
+            port=5000
+        )
     except Exception as e:
         print(f"Caught a global exception: {e}")
