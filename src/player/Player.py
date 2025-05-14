@@ -18,3 +18,6 @@ class Player(ABC):
     def move(self, point: Point):
         self.game.handleMove(self, point)
         self.game.modifyTimer()
+
+    def init_game(self):
+        pass

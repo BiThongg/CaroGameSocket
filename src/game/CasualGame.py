@@ -3,7 +3,9 @@ from util.cell import Cell
 from random import randint
 from util.point import Point
 
-class CasualGame(Game):   
+class CasualGame(Game):
+    targetCount = 5
+     
     @staticmethod
     def getClassName() -> str:
         return CasualGame.__name__
@@ -11,44 +13,6 @@ class CasualGame(Game):
     def __init__(self, size: int = 14):
         super().__init__(size)
 
-    def isEndGame(self) -> dict | None:
-        currentCell: Cell = self.turn
-        x = self.latestPoint.y
-        y = self.latestPoint.x
-
-        directions = [
-            (1, 0),   # ngang
-            (0, 1),   # dọc
-            (1, 1),   # chéo chính
-            (1, -1)   # chèo phụ
-        ]
-        
-        for dx, dy in directions:
-            count = 1
-            movedPoints: list[Point] = []
-
-            i, j = x + dx, y + dy
-            while 0 <= i < len(self.board) and 0 <= j < len(self.board[0]) and self.board[i][j] == currentCell:
-                movedPoints.append(Point(j, i))
-                count += 1
-                i += dx
-                j += dy
-                
-            # check chiều âm
-            i, j = x - dx, y - dy
-            while 0 <= i < len(self.board) and 0 <= j < len(self.board[0]) and self.board[i][j] == currentCell:
-                movedPoints.append(Point(j, i))
-                count += 1
-                i -= dx
-                j -= dy
-                
-            if count >= 5:
-                movedPoints.append(self.latestPoint)
-                return {
-                    "symbol": currentCell.name,
-                    "points": movedPoints
-                }
-        return None
         
     def getGameEndInfo(self) -> dict | None:
         result: dict = self.isEndGame()

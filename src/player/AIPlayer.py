@@ -7,7 +7,7 @@ from util.cell import Cell
 from game.CasualGame import *
 from game.TicTacToe import *
 from typing import Type, Callable, Dict
-from model.SumoKuAI import SumokuAI
+from model.SumokuAI import SumokuAI
 
 
 class AIPlayer(Player):
@@ -17,7 +17,9 @@ class AIPlayer(Player):
             CasualGame.__name__: SumokuAI(),
             TicTacToe.__name__: TictactoeModel(),
         }
-        print(self.models, self.game)
+        
+    def init_game(self):
+        self.models[self.game.__class__.__name__].init_game(self.game.board)
 
     def makeMove(self):
         if self.game is None:

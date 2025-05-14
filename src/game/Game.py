@@ -28,6 +28,45 @@ class Game(ABC):
             [Cell.NONE for _ in range(size)] for _ in range(size)
         ]
         self.onGameTimer()
+        
+    def isEndGame(self) -> dict | None:
+        currentCell: Cell = self.turn
+        x = self.latestPoint.y
+        y = self.latestPoint.x
+
+        directions = [
+            (1, 0),   # ngang
+            (0, 1),   # dọc
+            (1, 1),   # chéo chính
+            (1, -1)   # chèo phụ
+        ]
+        
+        for dx, dy in directions:
+            count = 1
+            movedPoints: list[Point] = []
+
+            i, j = x + dx, y + dy
+            while 0 <= i < len(self.board) and 0 <= j < len(self.board[0]) and self.board[i][j] == currentCell:
+                movedPoints.append(Point(j, i))
+                count += 1
+                i += dx
+                j += dy
+                
+            # check chiều âm
+            i, j = x - dx, y - dy
+            while 0 <= i < len(self.board) and 0 <= j < len(self.board[0]) and self.board[i][j] == currentCell:
+                movedPoints.append(Point(j, i))
+                count += 1
+                i -= dx
+                j -= dy
+                
+            if count >= self.targetCount:
+                movedPoints.append(self.latestPoint)
+                return {
+                    "symbol": currentCell.name,
+                    "points": movedPoints
+                }
+        return None
 
     # TIMEOUT MODULE
     def onGameTimer(self):
@@ -119,16 +158,12 @@ class Game(ABC):
     def addPlayer(self: Game, player: Player) -> None:
         player.game = self
         self.players.append(player)
+        player.init_game()
 
     def removePlayer(self, player: Player) -> None:
         player.game = None
         self.players.remove(player)
         return
-
-    def isGameOver(self) -> bool:
-        if (self.getWinner()) is not None:
-            return True
-        return False
 
     def drawBoard(self) -> None:
         table = Table(title="GAME SIEU DINH")

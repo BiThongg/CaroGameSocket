@@ -1,9 +1,10 @@
 from typing import List
+from model.CaroModel import CaroModel
 from util.point import Point
 from util.cell import Cell
 
 
-class TictactoeModel:
+class TictactoeModel(CaroModel):
     def __init__(self):
         pass
 
