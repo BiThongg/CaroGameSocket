@@ -1,6 +1,7 @@
 from flask import request
 from flask_socketio import emit
 
+
 from User import User
 from player.AIPlayer import *
 from player.PersonPlayer import *
@@ -12,9 +13,23 @@ from util.serialize import serialization
 from database.data import storage
 from auth.authentication import user_infomation_filter
 from config import *
+from cheating_detection import CheatDetectionFeatures
+import pandas as pd
+from sklearn.model_selection import train_test_split
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score, classification_report
+import joblib
+import os
+
+from cheating_detection.track_and_detect_cheating import track_and_detect_cheating, detect_cheating, detect_spamming
+
+
 
 @socketio.event
 @user_infomation_filter
+@detect_spamming
 def connect(user: User, payload: dict):
     if user is not None:
         print(f"User {user.name} connected")
@@ -85,6 +100,8 @@ def throwIcon(user: User, payload: dict):
 
 @socketio.on("send_message")
 @user_infomation_filter
+@detect_spamming
+# @track_and_detect_cheating
 def sendMessage(user: User, payload: dict):
     room: Room = storage.rooms.get(payload["room_id"])
     
@@ -106,6 +123,7 @@ def sendMessage(user: User, payload: dict):
 
 @socketio.on("create_room")
 @user_infomation_filter
+@track_and_detect_cheating
 def createRoom(user: User, payload: dict):
     room = storage.createRoom(payload["room_name"], user.id)
     socketio.emit(
@@ -119,6 +137,7 @@ def createRoom(user: User, payload: dict):
 
 @socketio.on("get_room")
 @user_infomation_filter
+# @track_and_detect_cheating
 def getRoomFromUserId(user: User, payload: dict):
     room = next(
         (
@@ -146,6 +165,8 @@ def getRoomFromUserId(user: User, payload: dict):
 
 @socketio.on("join_room")
 @user_infomation_filter
+@detect_spamming
+# @track_and_detect_cheating
 def joinRoom(user: User, payload: dict):
     room: Room = storage.rooms.get(payload["room_id"])
 
@@ -168,6 +189,7 @@ def joinRoom(user: User, payload: dict):
 
 @socketio.on("kick")
 @user_infomation_filter
+@detect_spamming
 def onKick(user: User, payload: dict):
     room: Room = storage.rooms.get(payload["room_id"])
 
@@ -187,6 +209,7 @@ def onKick(user: User, payload: dict):
 
 @socketio.on("add_bot")
 @user_infomation_filter
+# @track_and_detect_cheating
 def add_bot(user: User, payload: dict):
     room: Room = storage.rooms.get(payload["room_id"])
 
@@ -238,6 +261,7 @@ def changeGameType(user: User, payload: dict):
 
 @socketio.on("delete_exist_room_of_user")
 @user_infomation_filter
+@detect_spamming
 def deleteExistRoomOfuser(user: User, payload: dict):
     room: Room = next(
         (
@@ -260,6 +284,7 @@ def deleteExistRoomOfuser(user: User, payload: dict):
 
 @socketio.on("leave_room")
 @user_infomation_filter
+@track_and_detect_cheating
 def leaveRoom(user: User, payload: dict):
     room: Room = storage.rooms.get(payload["room_id"])
 
@@ -284,6 +309,7 @@ def leaveRoom(user: User, payload: dict):
 
 @socketio.on("start_game")
 @user_infomation_filter
+@detect_cheating
 def startGame(user: User, payload: dict):
     room: Room = storage.rooms.get(payload["room_id"])
     gameType: str = payload["game_type"]
@@ -307,6 +333,7 @@ def startGame(user: User, payload: dict):
 
 @socketio.on("move")
 @user_infomation_filter
+@detect_cheating
 def move(user: User, payload: dict):
     room: Room = storage.rooms.get(payload["room_id"])
 
@@ -434,6 +461,12 @@ def botMoveSumoku(payload: dict):
 #         "winner": f"{winner.user.name} ({serialization(winner.symbol)}) wins !"
 #     }, to=room.participantIds())
 if __name__ == "__main__":
+    import logging
+    log = logging.getLogger('werkzeug')
+    log.setLevel(logging.ERROR)  # Hides Flask HTTP logs
+    logging.getLogger('socketio').setLevel(logging.CRITICAL)
+    logging.getLogger('engineio').setLevel(logging.CRITICAL)
+
     try:
         socketio.run(
             app,
@@ -441,4 +474,4 @@ if __name__ == "__main__":
             port=5000
         )
     except Exception as e:
-        print(f"Caught a global exception: {e}")
+        print(f"Caught a global exception: {e}") 
