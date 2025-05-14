@@ -3,7 +3,7 @@ from util.cell import Cell
 from util.point import Point
 from model.Heuristic import Heuristic
 import random
-from util.zorbist_hash import ZobristTable
+from util.zobrist import ZobristTable
 import numpy as np
 
 class CaroModel(ABC):

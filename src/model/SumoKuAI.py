@@ -1,18 +1,53 @@
 from util.cell import Cell
 from util.point import Point
 from model.Heuristic import Heuristic
+from model.CaroModel import CaroModel
 import random
 
-class SumokuAI:
+from util.zobrist import ZobristTable
+
+class SumokuAI(CaroModel):
     def __init__(self):
+        super().__init__()
         self.heuristic = Heuristic()
-        self.MAX_DEPTH = 3
+        self.MAX_DEPTH = 7
         self.opponent_player = {Cell.X: Cell.O, Cell.O: Cell.X}
         self.empty_cells = 0
+        self.zobrist = ZobristTable(14, 14, 3)
+        self.transposition_table = {}
+        self._heuristic_cache = {}  # Cache for heuristic evaluations
+        self._optimal_list_cache = {}  # Cache for optimal lists
+
+    def _get_board_key(self, board):
+        # Create a unique key for the board state
+        return hash(tuple(tuple(row) for row in board))
+
+    def _get_cached_heuristic(self, board, player):
+        board_key = self._get_board_key(board)
+        cache_key = (board_key, player)
+        
+        if cache_key in self._heuristic_cache:
+            return self._heuristic_cache[cache_key]
+            
+        self.heuristic.evaluate_each_cell(board, player)
+        value = self.heuristic.evaluate_board(board)
+        self._heuristic_cache[cache_key] = value
+        return value
+
+    def _get_cached_optimal_list(self, board, player):
+        board_key = self._get_board_key(board)
+        cache_key = (board_key, player)
+        
+        if cache_key in self._optimal_list_cache:
+            return self._optimal_list_cache[cache_key]
+            
+        self.heuristic.evaluate_each_cell(board, player)
+        optimal_list = self.heuristic.get_optimal_list()
+        self._optimal_list_cache[cache_key] = optimal_list
+        return optimal_list
 
     def predict_move(self, board, symbol):
         point: Point = None
-
         best_move = self.alpha_beta(board, symbol)
 
         if best_move:
@@ -22,10 +57,7 @@ class SumokuAI:
             
         return None
 
-    def set_board(self, board):
-        self.empty_cells = sum(row.count(Cell.NONE) for row in board)
-
-    def alpha_beta(self, board, player):
+    def alpha_beta(self, board, player) -> Point | None:
         self.heuristic.evaluate_each_cell(board, player)
         ls = self.heuristic.get_optimal_list()
         _max = float('-inf')
@@ -34,7 +66,7 @@ class SumokuAI:
         for y, x in ls:
             self.make_move(board, y, x, player)
 
-            _value = self.min_value(board, float('-inf'), float('inf'), 0, self.opponent_player[player], (y, x))
+            _value = self.min_value(board, float('-inf'), float('inf'), 0, player, (y, x))
 
             if _max < _value:
                 _max = _value
@@ -47,77 +79,52 @@ class SumokuAI:
 
         return random.choice(ls_choose)
 
-    def min_value(self, board, alpha, beta, depth, player, last_move):
-        if depth >= self.MAX_DEPTH or self.check_winner(board, self.opponent_player[player], last_move) or self.is_over():
-            return self.heuristic.evaluate_board(board)
-
-        self.heuristic.evaluate_each_cell(board, self.opponent_player[player])
-        ls = self.heuristic.get_optimal_list()
-
-        for y, x in ls:
-            self.make_move(board, y, x, self.opponent_player[player])
-
-            beta = min(beta, self.max_value(board, alpha, beta, depth + 1, player, (y, x)))
-
-            self.undo_move(board, y, x)
-
-            if alpha >= beta:
-                break
-        return beta
-
-    def max_value(self, board, alpha, beta, depth, player, last_move):
+    def min_value(self, board, alpha, beta, depth, player, last_move) -> float:
         if depth >= self.MAX_DEPTH or self.check_winner(board, player, last_move) or self.is_over():
-            return self.heuristic.evaluate_board(board)
+            return self._get_cached_heuristic(board, player)
 
-        self.heuristic.evaluate_each_cell(board, player)
-        ls = self.heuristic.get_optimal_list()
+        # Check transposition table
+        cached_value = self.zobrist.get_cache(last_move[1], last_move[0], player)
+        if cached_value is not None:
+            return cached_value
+
+        ls = self._get_cached_optimal_list(board, player)
+        value = float('inf')
 
         for y, x in ls:
             self.make_move(board, y, x, player)
-
-            alpha = max(alpha, self.min_value(board, alpha, beta, depth + 1, self.opponent_player[player], (y, x)))
-
+            value = min(value, self.max_value(board, alpha, beta, depth + 1, player, (y, x)))
+            beta = min(beta, value)
             self.undo_move(board, y, x)
 
             if alpha >= beta:
                 break
-        return alpha
 
-    def is_over(self):
-        return self.empty_cells == 0
+        # Store in transposition table
+        self.zobrist.lets_cache(last_move[1], last_move[0], player, value)
+        return value
 
-    # Optimization: Check win condition using only the last move
-    def check_winner(self, board, player, last_move):
-        y, x = last_move
-        size = len(board)
-        directions = [(1, 0), (0, 1), (1, 1), (-1, 1)]  # vertical, horizontal, main diag, anti diag
+    def max_value(self, board, alpha, beta, depth, player, last_move) -> float:
+        if depth >= self.MAX_DEPTH or self.check_winner(board, player, last_move) or self.is_over():
+            return self._get_cached_heuristic(board, player)
 
-        for dy, dx in directions:
-            count = 1
+        # Check transposition table
+        cached_value = self.zobrist.get_cache(last_move[1], last_move[0], player)
+        if cached_value is not None:
+            return cached_value
 
-            # Check forward
-            ny, nx = y + dy, x + dx
-            while 0 <= ny < size and 0 <= nx < size and board[ny][nx] == player:
-                count += 1
-                ny += dy
-                nx += dx
+        ls = self._get_cached_optimal_list(board, player)
+        value = float('-inf')
 
-            # Check backward
-            ny, nx = y - dy, x - dx
-            while 0 <= ny < size and 0 <= nx < size and board[ny][nx] == player:
-                count += 1
-                ny -= dy
-                nx -= dx
+        for y, x in ls:
+            self.make_move(board, y, x, player)
+            value = max(value, self.min_value(board, alpha, beta, depth + 1, player, (y, x)))
+            alpha = max(alpha, value)
+            self.undo_move(board, y, x)
 
-            if count >= 5:
-                return True
+            if alpha >= beta:
+                break
 
-        return False
-
-    def make_move(self, board, y, x, player):
-        board[y][x] = player
-        self.empty_cells -= 1
-
-    def undo_move(self, board, y, x):
-        board[y][x] = Cell.NONE
-        self.empty_cells += 1
+        # Store in transposition table
+        self.zobrist.lets_cache(last_move[1], last_move[0], player, value)
+        return value
