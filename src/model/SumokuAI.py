@@ -10,7 +10,7 @@ class SumokuAI(CaroModel):
     def __init__(self):
         super().__init__()
         self.heuristic = Heuristic()
-        self.MAX_DEPTH = 5
+        self.MAX_DEPTH = 1000
         self.opponent_player = {Cell.X: Cell.O, Cell.O: Cell.X}
         self.empty_cells = 0
         self.zobrist = ZobristTable(14, 14, 3)
@@ -66,7 +66,7 @@ class SumokuAI(CaroModel):
         for y, x in ls:
             self.make_move(board, y, x, player)
 
-            _value = self.min_value(board, float('-inf'), float('inf'), 0, player, (y, x))
+            _value = self.min_value(board, float('-inf'), float('inf'), 0, self.opponent_player[player], (y, x))
 
             if _max < _value:
                 _max = _value
@@ -92,8 +92,8 @@ class SumokuAI(CaroModel):
         value = float('inf')
 
         for y, x in ls:
-            self.make_move(board, y, x, player)
-            value = min(value, self.max_value(board, alpha, beta, depth + 1, player, (y, x)))
+            self.make_move(board, y, x, self.opponent_player[player])
+            value = min(value, self.max_value(board, alpha, beta, depth + 1, self.opponent_player[player], (y, x)))
             beta = min(beta, value)
             self.undo_move(board, y, x)
 
@@ -118,7 +118,7 @@ class SumokuAI(CaroModel):
 
         for y, x in ls:
             self.make_move(board, y, x, player)
-            value = max(value, self.min_value(board, alpha, beta, depth + 1, player, (y, x)))
+            value = max(value, self.min_value(board, alpha, beta, depth + 1, self.opponent_player[player], (y, x)))
             alpha = max(alpha, value)
             self.undo_move(board, y, x)
 
