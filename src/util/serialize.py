@@ -1,4 +1,5 @@
 from enum import Enum
+from threading import Lock
 
 def serialization(obj, visited=None):
     if visited is None:

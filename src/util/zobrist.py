@@ -3,6 +3,8 @@ import os
 from threading import Thread, Lock
 from util.cell import Cell
 
+cache = {}
+cache_lock = Lock()
 
 def exists(file_path):
     # Check if the file exists
@@ -21,8 +23,8 @@ class ZobristTable:
         self._cache_lock = Lock()
         self.MAX_CACHE_SIZE = 1000000  # Limit cache size to 1 million entries
         
-        self.cache = {}
-        if exists("zobrist_cache.txt") and self.cache == {}:
+        global cache
+        if exists("zobrist_cache.txt") and not cache:
             self.load_cache("zobrist_cache.txt")
         
         self.table: dict[tuple[int, int], int] = {}
@@ -67,26 +69,27 @@ class ZobristTable:
     def save_cache(self, file_path):
         # Save the cache to a text file
         with open(file_path, 'w') as file:
-            for hash_value, value in self.cache.items():
+            for hash_value, value in cache.items():
                 file.write(f"{hash_value},{value}\n")
     
     def load_cache(self, file_path):
+        global cache
         try:
             if not exists(file_path) or os.path.getsize(file_path) == 0:
                 print("Cache file does not exist or is empty, creating new cache")
-                self.cache = {}
+                cache.clear()
                 return
             with open(file_path, 'r') as file:
                 for line in file:
                     try:
                         if line.strip():
                             hash_value, value = map(int, line.strip().split(','))
-                            self.cache[hash_value] = value
+                            cache[hash_value] = value
                     except ValueError:
                         print(f"Skipping malformed cache line: {line.strip()}")
         except Exception as e:
             print(f"Error loading cache: {str(e)}")
-            self.cache = {}
+            cache.clear()
             
 
     def compute_hash(self, board: list[list[Cell]]) -> int:
@@ -103,15 +106,18 @@ class ZobristTable:
         new_hash = self.update_hash(current_hash, x, y, cell)
 
         with self._cache_lock:
-            if len(self.cache) >= self.MAX_CACHE_SIZE:
-                self.cache = dict(list(self.cache.items())[-self.MAX_CACHE_SIZE//2:])
-            self.cache[new_hash] = value
-            if len(self.cache) % 100 == 0:  # Save less frequently
+            global cache
+            if len(cache) >= self.MAX_CACHE_SIZE:
+                # Keep only the most recent half of the cache
+                cache = dict(list(cache.items())[-self.MAX_CACHE_SIZE//2:])
+            cache[new_hash] = value
+            if len(cache) % 100 == 0:  # Save less frequently
                 Thread(target=self.save_cache, args=("zobrist_cache.txt",), daemon=True).start()
 
     def get_cache(self, current_hash, x, y, cell):
+        global cache
         new_hash = self.update_hash(current_hash, x, y, cell)
-        value = self.cache.get(new_hash, None)
+        value = cache.get(new_hash, None)
         if value is not None:
             print("Cache hit for", (y, x), cell, ":", value)
             return value

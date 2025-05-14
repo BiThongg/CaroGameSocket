@@ -1,8 +1,0 @@
-Flask
-Flask-Cors
-flask-socketio
-PyJWT
-numpy
-rich
-jsonpickle
-apscheduler
