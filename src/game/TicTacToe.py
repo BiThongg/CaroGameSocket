@@ -6,51 +6,14 @@ from util.point import Point
 
 # TicTacToe game is who get 3 in a row will win
 class TicTacToe(Game):
+    targetCount = 3
+    
     @staticmethod
     def getClassName() -> str:
         return TicTacToe.__name__
 
     def __init__(self):
         super().__init__(3)
-
-    def isEndGame(self) -> dict | None:
-        currentCell: Cell = self.turn
-        x = self.latestPoint.y
-        y = self.latestPoint.x
-
-        directions = [
-            (1, 0),   # ngang
-            (0, 1),   # dọc
-            (1, 1),   # chéo chính
-            (1, -1)   # chèo phụ
-        ]
-        
-        for dx, dy in directions:
-            count = 1
-            movedPoints: list[Point] = []
-            # check chiều dương
-            i, j = x + dx, y + dy
-            while 0 <= i < len(self.board) and 0 <= j < len(self.board[0]) and self.board[i][j] == currentCell:
-                movedPoints.append(Point(j, i))
-                count += 1
-                i += dx
-                j += dy
-                
-            # check chiều âm
-            i, j = x - dx, y - dy
-            while 0 <= i < len(self.board) and 0 <= j < len(self.board[0]) and self.board[i][j] == currentCell:
-                movedPoints.append(Point(j, i))
-                count += 1
-                i -= dx
-                j -= dy
-                
-            if count >= 3:
-                movedPoints.append(self.latestPoint)
-                return {
-                    "symbol": currentCell.name,
-                    "points": movedPoints,
-                }
-        return None
 
     def getGameEndInfo(self) -> dict | None:
         result: dict = self.isEndGame()
