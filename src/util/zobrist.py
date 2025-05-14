@@ -71,10 +71,23 @@ class ZobristTable:
     def load_cache(self, file_path):
         # Load the cache from a file using pickle
         try:
+            if not exists(file_path):
+                print("Cache file does not exist, creating new cache")
+                self.cache = {}
+                return
+                
+            if os.path.getsize(file_path) == 0:
+                print("Cache file is empty, creating new cache")
+                self.cache = {}
+                return
+                
             with open(file_path, 'rb') as file:
                 self.cache = pickle.load(file)
+        except (EOFError, pickle.UnpicklingError) as e:
+            print(f"Error loading cache (file may be corrupted): {str(e)}")
+            self.cache = {}
         except Exception as e:
-            print(f"Error loading cache: {str(e)}")
+            print(f"Unexpected error loading cache: {str(e)}")
             self.cache = {}
 
     def compute_hash(self, board: list[list[Cell]]) -> int:
