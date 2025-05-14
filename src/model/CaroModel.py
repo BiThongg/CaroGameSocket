@@ -9,8 +9,8 @@ import numpy as np
 class CaroModel(ABC):
     def __init__(self):
         self.empty_cells = 0
-        self.current_hash = 0
         self._board_size = None
+        self.zobrist = ZobristTable(14, 14, 3)
         self._directions = np.array([
             [1, 0],   # vertical
             [0, 1],   # horizontal
@@ -62,10 +62,11 @@ class CaroModel(ABC):
         
         return False
 
-    def make_move(self, board, y, x, player) -> None:
+    def make_move(self, board, y, x, player):
         # Update hash before making the move
         board[y][x] = player
         self.empty_cells -= 1
+        # return self.zobrist.update_hash(current_hash, x, y, player)
 
     def undo_move(self, board, y, x) -> None:
         # Update hash before undoing the move
